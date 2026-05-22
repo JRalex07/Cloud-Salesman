@@ -1,0 +1,154 @@
+{
+  "project_info": {
+    "project_number": "494756589888",
+    "project_id": "cloud-backend-f0281",
+    "storage_bucket": "cloud-backend-f0281.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:494756589888:android:04c883c22f44c7395e0aa5",
+        "android_client_info": {
+          "package_name": "com.cloudpower.admin"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "494756589888-qucd2l5b8cudfai9n9falgiab07r54md.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3M42B2YQYWvF5YXPaVsRMh3nKKe8YG-o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "494756589888-qucd2l5b8cudfai9n9falgiab07r54md.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "494756589888-0iagq5slruviacf3pdpbhl4bblc1u5b6.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.cloudConsumerApplication"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:494756589888:android:6730d405cec709e55e0aa5",
+        "android_client_info": {
+          "package_name": "com.cloudpower.consumer"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "494756589888-qucd2l5b8cudfai9n9falgiab07r54md.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3M42B2YQYWvF5YXPaVsRMh3nKKe8YG-o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "494756589888-qucd2l5b8cudfai9n9falgiab07r54md.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "494756589888-0iagq5slruviacf3pdpbhl4bblc1u5b6.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.cloudConsumerApplication"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:494756589888:android:f6d835681a3878aa5e0aa5",
+        "android_client_info": {
+          "package_name": "com.cloudpower.rider"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "494756589888-qucd2l5b8cudfai9n9falgiab07r54md.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3M42B2YQYWvF5YXPaVsRMh3nKKe8YG-o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "494756589888-qucd2l5b8cudfai9n9falgiab07r54md.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "494756589888-0iagq5slruviacf3pdpbhl4bblc1u5b6.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.cloudConsumerApplication"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:494756589888:android:aa9abf3b6686acb95e0aa5",
+        "android_client_info": {
+          "package_name": "com.cloudpower.salesman"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "494756589888-qucd2l5b8cudfai9n9falgiab07r54md.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3M42B2YQYWvF5YXPaVsRMh3nKKe8YG-o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "494756589888-qucd2l5b8cudfai9n9falgiab07r54md.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "494756589888-0iagq5slruviacf3pdpbhl4bblc1u5b6.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.cloudConsumerApplication"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
