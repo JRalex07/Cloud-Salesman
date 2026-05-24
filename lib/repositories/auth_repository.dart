@@ -18,7 +18,6 @@ void setForceBypass(bool val) {
 /// or general kDebugMode is enabled.
 bool isBypassEnabled() {
   if (_forceBypass) return true;
-  if (kDebugMode) return true;
   try {
     final key = Firebase.app().options.apiKey;
     if (key == 'dummy-api-key-for-progressive-offline' ||
