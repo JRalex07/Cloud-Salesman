@@ -47,9 +47,17 @@ class _CloudPowerSalesmanAppState extends ConsumerState<CloudPowerSalesmanApp> {
 
   Future<void> _initFirebase() async {
     try {
-      // Bootstrap Firebase services
-      if (kIsWeb) {
-        try {
+      // Always attempt standard platform-default initialization first
+      // (This will automatically read and load google-services.json on Android / iOS)
+      try {
+        await Firebase.initializeApp();
+      } catch (e) {
+        if (kDebugMode) {
+          print(
+              'Default Firebase initialization failed, trying platform fallback presets: $e');
+        }
+        // If default initialization fails, utilize progressive offline sandboxed presets
+        if (kIsWeb) {
           await Firebase.initializeApp(
             options: const FirebaseOptions(
               apiKey: "dummy-api-key-for-progressive-offline",
@@ -60,13 +68,7 @@ class _CloudPowerSalesmanAppState extends ConsumerState<CloudPowerSalesmanApp> {
               storageBucket: "cloud-power-salesman-offline.appspot.com",
             ),
           );
-        } catch (_) {
-          await Firebase.initializeApp();
-        }
-      } else {
-        try {
-          await Firebase.initializeApp();
-        } catch (_) {
+        } else {
           await Firebase.initializeApp(
             options: const FirebaseOptions(
               apiKey: "dummy-api-key-for-progressive-offline",

@@ -16,9 +16,226 @@ import '../../repositories/visit_repository.dart';
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({Key? key}) : super(key: key);
 
+  Widget _buildConnectivityBanner(
+      BuildContext context, WidgetRef ref, SyncState? syncState) {
+    if (syncState == null) return const SizedBox.shrink();
+
+    final int totalPending = syncState.pendingOrders + syncState.pendingVisits;
+    final bool isOnline = syncState.isOnline;
+    final bool isSyncing = syncState.isSyncing;
+
+    Color bannerColor;
+    Color textColor;
+    IconData icon;
+    String titleText;
+    String subtitleText;
+
+    if (!isOnline) {
+      bannerColor = Colors.orange.shade50;
+      textColor = Colors.orange.shade900;
+      icon = Icons.cloud_off_outlined;
+      titleText = 'Offline Support Active';
+      subtitleText = totalPending > 0
+          ? '$totalPending entries stored securely in your local offline queue.'
+          : 'App is running offline. Orders and visits will be saved locally.';
+    } else if (isSyncing) {
+      bannerColor = Colors.blue.shade50;
+      textColor = Colors.blue.shade900;
+      icon = Icons.sync;
+      titleText = 'Synchronizing Logs...';
+      subtitleText =
+          'Updating real-time ledgers, orders, and visits with cloud databases.';
+    } else if (totalPending > 0) {
+      bannerColor = Colors.amber.shade50;
+      textColor = Colors.amber.shade900;
+      icon = Icons.sync_problem_outlined;
+      titleText = 'Queue Awaiting Integration';
+      subtitleText =
+          '$totalPending local updates are waiting to sync with Cloud Power server.';
+    } else {
+      bannerColor = Colors.green.shade50;
+      textColor = const Color(0xFF065F46); // green-800
+      icon = Icons.cloud_done_outlined;
+      titleText = 'Device Online & Synced';
+      subtitleText =
+          'All offline buffers are clear. Server synchronization is fully up-to-date.';
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: !isOnline
+            ? Colors.amber.shade50
+            : (totalPending > 0 ? Colors.orange.shade50 : bannerColor),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: (!isOnline
+              ? Colors.amber.shade300
+              : (totalPending > 0
+                  ? Colors.orange.shade300
+                  : textColor.withOpacity(0.2))),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: textColor.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: (!isOnline
+                  ? Colors.amber.shade100
+                  : (totalPending > 0
+                      ? Colors.orange.shade100
+                      : textColor.withOpacity(0.12))),
+              shape: BoxShape.circle,
+            ),
+            child: isSyncing
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                    ),
+                  )
+                : Icon(
+                    !isOnline
+                        ? Icons.offline_bolt
+                        : (totalPending > 0 ? Icons.sync_problem : icon),
+                    color: !isOnline
+                        ? Colors.amber.shade900
+                        : (totalPending > 0
+                            ? Colors.orange.shade900
+                            : textColor),
+                    size: 20,
+                  ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      !isOnline
+                          ? 'Offline Queue'
+                          : (totalPending > 0
+                              ? 'Pending Synchronization'
+                              : titleText),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: !isOnline
+                            ? Colors.amber.shade900
+                            : (totalPending > 0
+                                ? Colors.orange.shade900
+                                : textColor),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: isOnline
+                            ? Colors.green.shade100
+                            : Colors.red.shade100,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        isOnline ? 'ONLINE' : 'OFFLINE',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: isOnline
+                              ? Colors.green.shade900
+                              : Colors.red.shade900,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  !isOnline
+                      ? (totalPending > 0
+                          ? 'You have $totalPending pending transaction(s) queued. They will automatically sync when network is restored.'
+                          : 'You are working securely offline. All new data is cached on-disk.')
+                      : (totalPending > 0
+                          ? '$totalPending transaction(s) are waiting to be uploaded to Firebase.'
+                          : subtitleText),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: !isOnline
+                        ? Colors.amber.shade800
+                        : (totalPending > 0
+                            ? Colors.orange.shade800
+                            : textColor.withOpacity(0.9)),
+                    height: 1.35,
+                  ),
+                ),
+                if (totalPending > 0 && isOnline) ...[
+                  const SizedBox(height: 10),
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        ref.read(syncProvider.notifier).autoSync();
+                      },
+                      borderRadius: BorderRadius.circular(6),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 6, horizontal: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade100,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: Colors.orange.shade300),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.sync,
+                                size: 14, color: Colors.orange.shade900),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Trigger Sync Now',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.orange.shade900,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  )
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileAsync = ref.watch(salesmanProfileProvider);
+    final syncState = ref.watch(syncProvider);
 
     return profileAsync.when(
       loading: () =>
@@ -60,178 +277,211 @@ class DashboardScreen extends ConsumerWidget {
             ],
           ),
           body: RefreshIndicator(
-            onRefresh: () async {
-              await ref.read(salesmanProfileProvider.notifier).refresh();
-            },
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16.0),
-              child: isAdmin
-                  ? _buildAdminDashboard(context, ref, salesman.uid)
-                  : Column(
+              onRefresh: () async {
+                await ref.read(salesmanProfileProvider.notifier).refresh();
+              },
+              child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // KPI Panel supporting adaptive bento layout grids helper
-                        ResponsiveLayout(
-                          mobile: _buildKpiGrid(ref, salesman.uid,
-                              crossAxisCount: 2, aspectRatio: 1.15),
-                          tablet: _buildKpiGrid(ref, salesman.uid,
-                              crossAxisCount: 3, aspectRatio: 1.6),
-                          desktop: _buildKpiGrid(ref, salesman.uid,
-                              crossAxisCount: 4, aspectRatio: 1.8),
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Primary Quick Actions Grid
-                        const Text(
-                          'Quick Actions',
-                          style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 12),
-                        GridView.count(
-                          crossAxisCount:
-                              MediaQuery.of(context).size.width >= 600 ? 4 : 2,
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          childAspectRatio: 2.2,
-                          children: [
-                            _buildActionCard(
-                              context,
-                              'Route Partners',
-                              Colors.blue,
-                              Icons.store_mall_directory_outlined,
-                              () => context.go('/shops'),
-                            ),
-                            _buildActionCard(
-                              context,
-                              'Start Visit',
-                              Colors.indigo,
-                              Icons.place_outlined,
-                              () => context.go('/visits'),
-                            ),
-                            _buildActionCard(
-                              context,
-                              'Order History',
-                              Colors.green,
-                              Icons.shopping_cart_outlined,
-                              () => context.go('/orders/history'),
-                            ),
-                            _buildActionCard(
-                              context,
-                              'Shift Records',
-                              Colors.teal,
-                              Icons.more_time_outlined,
-                              () => context.go('/attendance'),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Today Completed visits list & Active Target accomplishments details
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              flex: 3,
-                              child: Column(
+                        _buildConnectivityBanner(context, ref, syncState),
+                        isAdmin
+                            ? _buildAdminDashboard(context, ref, salesman.uid)
+                            : Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  // KPI Panel supporting adaptive bento layout grids helper
+                                  ResponsiveLayout(
+                                    mobile: _buildKpiGrid(ref, salesman.uid,
+                                        crossAxisCount: 2, aspectRatio: 1.15),
+                                    tablet: _buildKpiGrid(ref, salesman.uid,
+                                        crossAxisCount: 3, aspectRatio: 1.6),
+                                    desktop: _buildKpiGrid(ref, salesman.uid,
+                                        crossAxisCount: 4, aspectRatio: 1.8),
+                                  ),
+                                  const SizedBox(height: 24),
+
+                                  // Primary Quick Actions Grid
                                   const Text(
-                                    'Today Visits',
+                                    'Quick Actions',
                                     style: TextStyle(
-                                        fontSize: 16,
+                                        fontSize: 18,
                                         fontWeight: FontWeight.bold),
                                   ),
                                   const SizedBox(height: 12),
-                                  StreamBuilder(
-                                    stream: ref
-                                        .watch(visitRepositoryProvider)
-                                        .getVisitsHistoryStream(salesman.uid),
-                                    builder: (context, snapshot) {
-                                      if (snapshot.connectionState ==
-                                          ConnectionState.waiting) {
-                                        return const Center(
-                                            child: Padding(
-                                                padding: EdgeInsets.all(16),
-                                                child:
-                                                    CircularProgressIndicator()));
-                                      }
-                                      final list = snapshot.data ?? [];
-                                      if (list.isEmpty) {
-                                        return Card(
-                                          child: Padding(
-                                            padding: const EdgeInsets.all(24.0),
-                                            child: Center(
-                                              child: Text(
-                                                'No visits recorded today yet.',
-                                                style: TextStyle(
-                                                    color: Colors.grey[500]),
-                                              ),
+                                  GridView.count(
+                                    crossAxisCount:
+                                        MediaQuery.of(context).size.width >= 600
+                                            ? 4
+                                            : 2,
+                                    shrinkWrap: true,
+                                    physics:
+                                        const NeverScrollableScrollPhysics(),
+                                    crossAxisSpacing: 12,
+                                    mainAxisSpacing: 12,
+                                    childAspectRatio: 2.2,
+                                    children: [
+                                      _buildActionCard(
+                                        context,
+                                        'Route Partners',
+                                        Colors.blue,
+                                        Icons.store_mall_directory_outlined,
+                                        () => context.go('/shops'),
+                                      ),
+                                      _buildActionCard(
+                                        context,
+                                        'Start Visit',
+                                        Colors.indigo,
+                                        Icons.place_outlined,
+                                        () => context.go('/visits'),
+                                      ),
+                                      _buildActionCard(
+                                        context,
+                                        'Order History',
+                                        Colors.green,
+                                        Icons.shopping_cart_outlined,
+                                        () => context.go('/orders/history'),
+                                      ),
+                                      _buildActionCard(
+                                        context,
+                                        'Shift Records',
+                                        Colors.teal,
+                                        Icons.more_time_outlined,
+                                        () => context.go('/attendance'),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 24),
+
+                                  // Today Completed visits list & Active Target accomplishments details
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        flex: 3,
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            const Text(
+                                              'Today Visits',
+                                              style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold),
                                             ),
-                                          ),
-                                        );
-                                      }
-                                      return ListView.builder(
-                                        shrinkWrap: true,
-                                        physics:
-                                            const NeverScrollableScrollPhysics(),
-                                        itemCount:
-                                            list.length > 3 ? 3 : list.length,
-                                        itemBuilder: (context, idx) {
-                                          final visit = list[idx];
-                                          return Card(
-                                            margin: const EdgeInsets.only(
-                                                bottom: 8),
-                                            child: ListTile(
-                                              leading: CircleAvatar(
-                                                backgroundColor: Colors.blue
-                                                    .withOpacity(0.1),
-                                                child: Icon(Icons.location_on,
-                                                    color: Theme.of(context)
-                                                        .primaryColor),
-                                              ),
-                                              title: Text(visit.shopName,
-                                                  style: const TextStyle(
-                                                      fontWeight:
-                                                          FontWeight.w600)),
-                                              subtitle: Text(visit.status ==
-                                                      'CheckedIn'
-                                                  ? 'Checked in at client desk'
-                                                  : 'Visit completed'),
-                                              trailing: Chip(
-                                                label: Text(visit.status,
-                                                    style: const TextStyle(
-                                                        fontSize: 11)),
-                                                backgroundColor:
-                                                    visit.status == 'Completed'
-                                                        ? Colors.green[100]
-                                                        : Colors.blue[100],
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    },
+                                            const SizedBox(height: 12),
+                                            StreamBuilder(
+                                              stream: ref
+                                                  .watch(
+                                                      visitRepositoryProvider)
+                                                  .getVisitsHistoryStream(
+                                                      salesman.uid),
+                                              builder: (context, snapshot) {
+                                                if (snapshot.connectionState ==
+                                                    ConnectionState.waiting) {
+                                                  return const Center(
+                                                      child: Padding(
+                                                          padding:
+                                                              EdgeInsets.all(
+                                                                  16),
+                                                          child:
+                                                              CircularProgressIndicator()));
+                                                }
+                                                final list =
+                                                    snapshot.data ?? [];
+                                                if (list.isEmpty) {
+                                                  return Card(
+                                                    child: Padding(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                              24.0),
+                                                      child: Center(
+                                                        child: Text(
+                                                          'No visits recorded today yet.',
+                                                          style: TextStyle(
+                                                              color: Colors
+                                                                  .grey[500]),
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
+                                                return ListView.builder(
+                                                  shrinkWrap: true,
+                                                  physics:
+                                                      const NeverScrollableScrollPhysics(),
+                                                  itemCount: list.length > 3
+                                                      ? 3
+                                                      : list.length,
+                                                  itemBuilder: (context, idx) {
+                                                    final visit = list[idx];
+                                                    return Card(
+                                                      margin:
+                                                          const EdgeInsets.only(
+                                                              bottom: 8),
+                                                      child: ListTile(
+                                                        leading: CircleAvatar(
+                                                          backgroundColor:
+                                                              Colors.blue
+                                                                  .withOpacity(
+                                                                      0.1),
+                                                          child: Icon(
+                                                              Icons.location_on,
+                                                              color: Theme.of(
+                                                                      context)
+                                                                  .primaryColor),
+                                                        ),
+                                                        title: Text(
+                                                            visit.shopName,
+                                                            style: const TextStyle(
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w600)),
+                                                        subtitle: Text(visit
+                                                                    .status ==
+                                                                'CheckedIn'
+                                                            ? 'Checked in at client desk'
+                                                            : 'Visit completed'),
+                                                        trailing: Chip(
+                                                          label: Text(
+                                                              visit.status,
+                                                              style:
+                                                                  const TextStyle(
+                                                                      fontSize:
+                                                                          11)),
+                                                          backgroundColor: visit
+                                                                      .status ==
+                                                                  'Completed'
+                                                              ? Colors
+                                                                  .green[100]
+                                                              : Colors
+                                                                  .blue[100],
+                                                        ),
+                                                      ),
+                                                    );
+                                                  },
+                                                );
+                                              },
+                                            )
+                                          ],
+                                        ),
+                                      ),
+                                      if (MediaQuery.of(context).size.width >=
+                                          900) ...[
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          flex: 2,
+                                          child: _buildRouteTargetCard(),
+                                        )
+                                      ]
+                                    ],
                                   )
                                 ],
                               ),
-                            ),
-                            if (MediaQuery.of(context).size.width >= 900) ...[
-                              const SizedBox(width: 16),
-                              Expanded(
-                                flex: 2,
-                                child: _buildRouteTargetCard(),
-                              )
-                            ]
-                          ],
-                        )
-                      ],
-                    ),
-            ),
-          ),
+                      ]))),
         );
       },
     );
