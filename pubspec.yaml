@@ -1,4 +1,4 @@
-﻿name: cloud_power_salesman
+name: cloud_power_salesman
 
 description: Production Ready Salesman App
 
@@ -55,7 +55,6 @@ dependencies:
   # UI
   gap: ^3.0.1
   shimmer: ^3.0.0
-
 dev_dependencies:
   flutter_test:
     sdk: flutter

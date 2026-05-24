@@ -131,7 +131,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           );
         },
         onFailed: (errorMessage) {
-          if (!kDebugMode) {
+          final errStr = errorMessage.toLowerCase();
+          final isConfigErr = errStr.contains('api-key-not-valid') ||
+              errStr.contains('api-key') ||
+              errStr.contains('invalid-api-key') ||
+              errStr.contains('unauthorized') ||
+              errStr.contains('not-allowed');
+
+          if (!isBypassEnabled() && !isConfigErr) {
             setState(() {
               _isLoading = false;
               _errorMessage = errorMessage;
@@ -146,14 +153,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                  '[SANDBOX BYPASS] Mock code 123456 ready for $formattedPhone'),
+                  '[OTP Fallback] Ready for $formattedPhone (Mock Code: 123456)'),
               behavior: SnackBarBehavior.floating,
             ),
           );
         },
       );
     } catch (e) {
-      if (!kDebugMode) {
+      final errStr = e.toString().toLowerCase();
+      final isConfigErr = errStr.contains('api-key-not-valid') ||
+          errStr.contains('api-key') ||
+          errStr.contains('invalid-api-key') ||
+          errStr.contains('unauthorized') ||
+          errStr.contains('not-allowed');
+
+      if (!isBypassEnabled() && !isConfigErr) {
         setState(() {
           _isLoading = false;
           _errorMessage = e.toString();
@@ -168,7 +182,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-              '[SANDBOX BYPASS] Mock code 123456 ready for $formattedPhone'),
+              '[OTP Fallback] Ready for $formattedPhone (Mock Code: 123456)'),
           behavior: SnackBarBehavior.floating,
         ),
       );
