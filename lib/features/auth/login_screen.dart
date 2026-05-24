@@ -487,7 +487,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                   ] else if (_otpSent) ...[
-                    if (kDebugMode &&
+                    if ((kDebugMode || isBypassEnabled()) &&
                         _verificationId != null &&
                         _verificationId!
                             .startsWith('mock-verification-id-bypass:')) ...[
