@@ -72,5 +72,4 @@ class DefaultFirebaseOptions {
     storageBucket: 'cloud-backend-f0281.firebasestorage.app',
     iosBundleId: 'com.cloudpower.salesman',
   );
-
 }
