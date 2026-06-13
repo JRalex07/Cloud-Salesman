@@ -1,8 +1,8 @@
 ﻿import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/order.dart';
-import '../models/order_timeline.dart';
-import '../providers/global_providers.dart';
+import 'package:cloud_power_salesman/models/order.dart';
+import 'package:cloud_power_salesman/models/order_timeline.dart';
+import 'package:cloud_power_salesman/providers/global_providers.dart';
 
 abstract class OrderRepository {
   Future<void> createOrder(Order order);

@@ -55,6 +55,7 @@ dependencies:
   # UI
   gap: ^3.0.1
   shimmer: ^3.0.0
+  lottie: ^3.3.3
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -71,6 +72,7 @@ flutter:
   uses-material-design: true
 
   assets:
+    - assets/
     - assets/images/
 
   # fonts:

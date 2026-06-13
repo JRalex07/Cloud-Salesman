@@ -46,9 +46,7 @@ class Product {
   factory Product.fromJson(Map<String, dynamic> json, {String? id}) {
     final parsedImage = json['image'] ?? '';
     final imagesList = json['images'];
-    final fallbackImage = (imagesList is List && imagesList.isNotEmpty)
-        ? imagesList[0].toString()
-        : '';
+    final fallbackImage = (imagesList is List && imagesList.isNotEmpty) ? imagesList[0].toString() : '';
 
     return Product(
       productId: id ?? json['productId'] ?? json['id'] ?? '',
@@ -67,9 +65,7 @@ class Product {
           (json['sellPrice'] as num?)?.toDouble() ??
           0.0,
       stock: json['stock'] ?? json['quantity'] ?? 0,
-      gst: (json['gst'] as num?)?.toDouble() ??
-          (json['tax'] as num?)?.toDouble() ??
-          0.0,
+      gst: (json['gst'] as num?)?.toDouble() ?? (json['tax'] as num?)?.toDouble() ?? 0.0,
       active: json['isActive'] ?? json['active'] ?? false,
       createdAt: (json['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
@@ -103,3 +99,4 @@ class Product {
     );
   }
 }
+

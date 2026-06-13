@@ -1,8 +1,8 @@
 ﻿import 'dart:math' show cos, sqrt, asin, pi;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/visit.dart';
-import '../providers/global_providers.dart';
+import 'package:cloud_power_salesman/models/visit.dart';
+import 'package:cloud_power_salesman/providers/global_providers.dart';
 
 abstract class VisitRepository {
   Future<void> checkIn(String salesmanId, Visit visit);

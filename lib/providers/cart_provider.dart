@@ -1,12 +1,12 @@
 ﻿import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/order.dart';
-import '../models/product.dart';
-import '../repositories/order_repository.dart';
-import 'sync_provider.dart';
+import 'package:cloud_power_salesman/models/order.dart';
+import 'package:cloud_power_salesman/models/product.dart';
+import 'package:cloud_power_salesman/repositories/order_repository.dart';
+import 'package:cloud_power_salesman/providers/sync_provider.dart';
 
 class CartState {
   final Map<String, int> itemQuantities; // productId -> quantity
-  final Map<String, Product> products; // productId -> Product metadata
+  final Map<String, Product> products;   // productId -> Product metadata
   final double discountPercentage;
   final String notes;
 
@@ -49,7 +49,6 @@ class CartState {
 
   double get totalGst {
     double gstAccumulator = 0.0;
-    final discountedSubtotal = subtotal - discountAmount;
     if (subtotal == 0) return 0.0;
 
     itemQuantities.forEach((id, q) {
@@ -76,14 +75,12 @@ class CartNotifier extends StateNotifier<CartState> {
   final Ref _ref;
 
   CartNotifier(this._ref)
-      : super(
-          CartState(
-            itemQuantities: {},
-            products: {},
-            discountPercentage: 0.0,
-            notes: '',
-          ),
-        );
+      : super(CartState(
+          itemQuantities: {},
+          products: {},
+          discountPercentage: 0.0,
+          notes: '',
+        ));
 
   void addItem(Product product) {
     final quantities = Map<String, int>.from(state.itemQuantities);
@@ -154,17 +151,15 @@ class CartNotifier extends StateNotifier<CartState> {
         final double taxableBase = value - shareDiscount;
         final double computedGstAmount = taxableBase * (p.gst / 100.0);
 
-        orderItems.add(
-          OrderItem(
-            productId: id,
-            name: p.name,
-            quantity: q,
-            price: p.wholesalePrice,
-            gstPercentage: p.gst,
-            gstAmount: computedGstAmount,
-            total: value - shareDiscount + computedGstAmount,
-          ),
-        );
+        orderItems.add(OrderItem(
+          productId: id,
+          name: p.name,
+          quantity: q,
+          price: p.wholesalePrice,
+          gstPercentage: p.gst,
+          gstAmount: computedGstAmount,
+          total: value - shareDiscount + computedGstAmount,
+        ));
       }
     });
 
@@ -204,3 +199,4 @@ class CartNotifier extends StateNotifier<CartState> {
 final cartProvider = StateNotifierProvider<CartNotifier, CartState>((ref) {
   return CartNotifier(ref);
 });
+

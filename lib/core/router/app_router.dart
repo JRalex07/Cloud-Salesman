@@ -1,24 +1,25 @@
-﻿import 'dart:async';
+﻿import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../providers/global_providers.dart';
+import 'package:cloud_power_salesman/providers/global_providers.dart';
 
 // Import Screens in advance so references resolve
-import '../../features/auth/login_screen.dart';
-import '../../features/auth/forgot_password_screen.dart';
-import '../../features/dashboard/dashboard_screen.dart';
-import '../../features/shops/shop_list_screen.dart';
-import '../../features/shops/shop_detail_screen.dart';
-import '../../features/shops/add_edit_shop_screen.dart';
-import '../../features/visits/visit_screen.dart';
-import '../../features/orders/create_order_screen.dart';
-import '../../features/orders/cart_screen.dart';
-import '../../features/orders/order_history_screen.dart';
-import '../../features/orders/order_detail_screen.dart';
-import '../../features/attendance/attendance_screen.dart';
-import '../../features/profile/profile_screen.dart';
-import '../../features/notifications/notifications_screen.dart';
+import 'package:cloud_power_salesman/features/auth/login_screen.dart';
+import 'package:cloud_power_salesman/features/auth/forgot_password_screen.dart';
+import 'package:cloud_power_salesman/features/dashboard/dashboard_screen.dart';
+import 'package:cloud_power_salesman/features/shops/shop_list_screen.dart';
+import 'package:cloud_power_salesman/features/shops/shop_detail_screen.dart';
+import 'package:cloud_power_salesman/features/shops/add_edit_shop_screen.dart';
+import 'package:cloud_power_salesman/features/visits/visit_screen.dart';
+import 'package:cloud_power_salesman/features/orders/create_order_screen.dart';
+import 'package:cloud_power_salesman/features/orders/cart_screen.dart';
+import 'package:cloud_power_salesman/features/orders/order_history_screen.dart';
+import 'package:cloud_power_salesman/features/orders/order_detail_screen.dart';
+import 'package:cloud_power_salesman/features/attendance/attendance_screen.dart';
+import 'package:cloud_power_salesman/features/profile/profile_screen.dart';
+import 'package:cloud_power_salesman/features/notifications/notifications_screen.dart';
+import 'package:cloud_power_salesman/features/dashboard/unknown_page.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey =
     GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -27,12 +28,15 @@ final GlobalKey<NavigatorState> _shellNavigatorKey =
 
 class AuthRefreshListenable extends ChangeNotifier {
   AuthRefreshListenable(Ref ref) {
-    _subscription = ref.listen<String?>(activeUidProvider, (previous, next) {
+    _subscription = ref.listen<AsyncValue<User?>>(authStateChangesProvider,
+        (previous, next) {
+      // Always notify when the auth state emits a new value,
+      // even if it transitions from loading to null (logged out).
       notifyListeners();
     });
   }
 
-  late final ProviderSubscription<String?> _subscription;
+  late final ProviderSubscription<AsyncValue<User?>> _subscription;
 
   @override
   void dispose() {
@@ -51,16 +55,25 @@ final routerProvider = Provider<GoRouter>((ref) {
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/dashboard',
     refreshListenable: listenable,
+    errorBuilder: (context, state) => const UnknownPage(),
     // Dynamic redirect guard depending on Auth Session Status
     redirect: (context, state) {
-      final uid = ref.read(activeUidProvider);
+      final authAsync = ref.read(authStateChangesProvider);
+
+      // If the initial auth check is still in progress, don't redirect.
+      // The custom builder in main.dart will show the splash screen.
+      if (authAsync.isLoading) return null;
+
+      final uid = authAsync.valueOrNull?.uid;
       final insideLogin = state.matchedLocation == '/login' ||
           state.matchedLocation == '/forgot-password';
 
       if (uid == null) {
+        // If not logged in, force Login screen unless they are already trying to reset password
         return insideLogin ? null : '/login';
       }
 
+      // If logged in, don't let them stay on login screen
       if (insideLogin) {
         return '/dashboard';
       }
@@ -70,11 +83,22 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(
         path: '/login',
+        name: 'login',
         builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
         path: '/forgot-password',
+        name: 'forgot-password',
         builder: (context, state) => const ForgotPasswordScreen(),
+      ),
+      // Top-level direct deep link for Orders with literal 'ordID:' prefix
+      GoRoute(
+        path: '/order/:id',
+        name: 'order-detail-direct',
+        builder: (context, state) {
+          final orderId = state.pathParameters['id'] ?? '';
+          return OrderDetailScreen(orderId: orderId);
+        },
       ),
       // Shell layout adding persistent sidebars for Wide Screen support
       ShellRoute(
@@ -86,18 +110,22 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(
             path: '/dashboard',
+            name: 'dashboard',
             builder: (context, state) => const DashboardScreen(),
           ),
           GoRoute(
             path: '/shops',
+            name: 'shops',
             builder: (context, state) => const ShopListScreen(),
             routes: [
               GoRoute(
                 path: 'add',
+                name: 'shop-add',
                 builder: (context, state) => const AddEditShopScreen(),
               ),
               GoRoute(
                 path: ':id',
+                name: 'shop-detail',
                 builder: (context, state) {
                   final shopId = state.pathParameters['id'] ?? '';
                   return ShopDetailScreen(shopId: shopId);
@@ -107,10 +135,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/visits',
+            name: 'visits',
             builder: (context, state) => const VisitScreen(),
           ),
           GoRoute(
             path: '/orders/create',
+            name: 'order-create',
             builder: (context, state) {
               final shopId = state.uri.queryParameters['shopId'] ?? '';
               final shopName = state.uri.queryParameters['shopName'] ?? '';
@@ -119,6 +149,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/orders/cart',
+            name: 'order-cart',
             builder: (context, state) {
               final shopId = state.uri.queryParameters['shopId'] ?? '';
               final shopName = state.uri.queryParameters['shopName'] ?? '';
@@ -127,27 +158,22 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: '/orders/history',
+            name: 'order-history',
             builder: (context, state) => const OrderHistoryScreen(),
-            routes: [
-              GoRoute(
-                path: ':id',
-                builder: (context, state) {
-                  final orderId = state.pathParameters['id'] ?? '';
-                  return OrderDetailScreen(orderId: orderId);
-                },
-              ),
-            ],
           ),
           GoRoute(
             path: '/attendance',
+            name: 'attendance',
             builder: (context, state) => const AttendanceScreen(),
           ),
           GoRoute(
             path: '/profile',
+            name: 'profile',
             builder: (context, state) => const ProfileScreen(),
           ),
           GoRoute(
             path: '/notifications',
+            name: 'notifications',
             builder: (context, state) => const NotificationsScreen(),
           ),
         ],

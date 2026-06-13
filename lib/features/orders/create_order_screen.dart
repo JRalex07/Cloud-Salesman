@@ -2,10 +2,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../models/product.dart';
-import '../../models/category.dart';
-import '../../repositories/product_repository.dart';
-import '../../providers/cart_provider.dart';
+import 'package:cloud_power_salesman/core/widgets/custom_snackbar.dart';
+import 'package:cloud_power_salesman/models/product.dart';
+import 'package:cloud_power_salesman/models/category.dart';
+import 'package:cloud_power_salesman/repositories/product_repository.dart';
+import 'package:cloud_power_salesman/providers/cart_provider.dart';
 
 class CreateOrderScreen extends ConsumerStatefulWidget {
   final String shopId;
@@ -27,32 +28,26 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
   @override
   Widget build(BuildContext context) {
     final cartState = ref.watch(cartProvider);
-    final productsStream =
-        ref.read(productRepositoryProvider).getActiveProducts();
-    final categoriesStream =
-        ref.read(productRepositoryProvider).getCategories();
+    final productsStream = ref.read(productRepositoryProvider).getActiveProducts();
+    final categoriesStream = ref.read(productRepositoryProvider).getCategories();
 
     return Scaffold(
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Book Order Products',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            Text('Buying for: ${widget.shopName}',
-                style: const TextStyle(fontSize: 12, color: Colors.white70)),
+            const Text('Book Order Products', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text('Buying for: ${widget.shopName}', style: const TextStyle(fontSize: 12, color: Colors.white70)),
           ],
         ),
         actions: [
           Badge(
-            label: Text(
-                '${cartState.itemQuantities.values.fold(0, (sum, q) => sum + q)}'),
+            label: Text('${cartState.itemQuantities.values.fold(0, (sum, q) => sum + q)}'),
             child: IconButton(
               icon: const Icon(Icons.shopping_cart),
               tooltip: 'Go to Cart',
               onPressed: () {
-                context.push(
-                    '/orders/cart?shopId=${widget.shopId}&shopName=${Uri.encodeComponent(widget.shopName)}');
+                context.push('/orders/cart?shopId=${widget.shopId}&shopName=${Uri.encodeComponent(widget.shopName)}');
               },
             ),
           ),
@@ -67,8 +62,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
           return StreamBuilder<List<Product>>(
             stream: productsStream,
             builder: (context, productsSnapshot) {
-              if (categoriesSnapshot.connectionState ==
-                      ConnectionState.waiting ||
+              if (categoriesSnapshot.connectionState == ConnectionState.waiting ||
                   productsSnapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               }
@@ -91,15 +85,11 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
               }
 
               // Compute effective selected class ensuring safety if category gets removed
-              final effectiveCategory = categories.contains(_selectedCategory)
-                  ? _selectedCategory
-                  : 'All';
+              final effectiveCategory = categories.contains(_selectedCategory) ? _selectedCategory : 'All';
 
               var filteredList = allProducts;
               if (effectiveCategory != 'All') {
-                filteredList = filteredList
-                    .where((p) => p.category == effectiveCategory)
-                    .toList();
+                filteredList = filteredList.where((p) => p.category == effectiveCategory).toList();
               }
 
               return Row(
@@ -136,10 +126,8 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                             });
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 20, horizontal: 8),
-                            color:
-                                isSelected ? Colors.white : Colors.transparent,
+                            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
+                            color: isSelected ? Colors.white : Colors.transparent,
                             child: Column(
                               children: [
                                 catObj.image.isNotEmpty
@@ -150,35 +138,27 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                                           width: 40,
                                           height: 40,
                                           fit: BoxFit.cover,
-                                          placeholder: (context, url) =>
-                                              const SizedBox(
+                                          placeholder: (context, url) => const SizedBox(
                                             width: 40,
                                             height: 40,
                                             child: Center(
                                               child: SizedBox(
                                                 width: 16,
                                                 height: 16,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                        strokeWidth: 2),
+                                                child: CircularProgressIndicator(strokeWidth: 2),
                                               ),
                                             ),
                                           ),
-                                          errorWidget: (context, url, error) =>
-                                              Icon(
+                                          errorWidget: (context, url, error) => Icon(
                                             _getCategoryIcon(cat),
-                                            color: isSelected
-                                                ? Theme.of(context).primaryColor
-                                                : Colors.grey[600],
+                                            color: isSelected ? Theme.of(context).primaryColor : Colors.grey[600],
                                             size: 24,
                                           ),
                                         ),
                                       )
                                     : Icon(
                                         _getCategoryIcon(cat),
-                                        color: isSelected
-                                            ? Theme.of(context).primaryColor
-                                            : Colors.grey[600],
+                                        color: isSelected ? Theme.of(context).primaryColor : Colors.grey[600],
                                         size: 24,
                                       ),
                                 const SizedBox(height: 6),
@@ -186,12 +166,8 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                                   cat,
                                   style: TextStyle(
                                     fontSize: 11,
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                    color: isSelected
-                                        ? Theme.of(context).primaryColor
-                                        : Colors.grey[600],
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                    color: isSelected ? Theme.of(context).primaryColor : Colors.grey[600],
                                   ),
                                   textAlign: TextAlign.center,
                                 )
@@ -224,8 +200,7 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
           children: [
             Icon(Icons.inventory_2_outlined, size: 48, color: Colors.grey[300]),
             const SizedBox(height: 16),
-            Text('No active products in this category.',
-                style: TextStyle(color: Colors.grey[500])),
+            Text('No active products in this category.', style: TextStyle(color: Colors.grey[500])),
           ],
         ),
       );
@@ -266,12 +241,10 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                               child: SizedBox(
                                 width: 20,
                                 height: 20,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(strokeWidth: 2),
                               ),
                             ),
-                            errorWidget: (context, url, error) =>
-                                const Icon(Icons.fastfood, color: Colors.grey),
+                            errorWidget: (context, url, error) => const Icon(Icons.fastfood, color: Colors.grey),
                           ),
                         )
                       : const Icon(Icons.fastfood, color: Colors.grey),
@@ -281,20 +254,11 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(p.name,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 14)),
+                      Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                       const SizedBox(height: 4),
-                      Text(
-                          'Price: ₹${p.wholesalePrice.toStringAsFixed(2)}  •  GST: ${p.gst}%',
-                          style:
-                              TextStyle(fontSize: 12, color: Colors.grey[600])),
+                      Text('Price: ₹${p.wholesalePrice.toStringAsFixed(2)}  •  GST: ${p.gst}%', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
                       const SizedBox(height: 4),
-                      Text('Available Stock: ${p.stock}',
-                          style: TextStyle(
-                              fontSize: 11,
-                              color: p.stock < 10 ? Colors.red : Colors.green,
-                              fontWeight: FontWeight.bold)),
+                      Text('Available Stock: ${p.stock}', style: TextStyle(fontSize: 11, color: p.stock < 10 ? Colors.red : Colors.green, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
@@ -304,45 +268,38 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.remove_circle_outline,
-                                color: Colors.blue),
+                            icon: const Icon(Icons.remove_circle_outline, color: Colors.blue),
                             onPressed: () {
-                              cartNotifier.updateQuantity(
-                                  p.productId, quantity - 1);
+                              cartNotifier.updateQuantity(p.productId, quantity - 1);
                             },
                           ),
-                          Text('$quantity',
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 14)),
+                          Text('$quantity', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                           IconButton(
-                            icon: const Icon(Icons.add_circle_outline,
-                                color: Colors.blue),
+                            icon: const Icon(Icons.add_circle_outline, color: Colors.blue),
                             onPressed: () {
                               if (quantity >= p.stock) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content: Text(
-                                            'Cannot book order beyond stock capabilities.')));
+                                CustomSnackbar.show(
+                                  context,
+                                  message: 'Cannot book order beyond stock capabilities.',
+                                  type: SnackbarType.warning,
+                                );
                                 return;
                               }
-                              cartNotifier.updateQuantity(
-                                  p.productId, quantity + 1);
+                              cartNotifier.updateQuantity(p.productId, quantity + 1);
                             },
                           ),
                         ],
                       )
                     : ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         ),
                         onPressed: p.stock <= 0
                             ? null
                             : () {
                                 cartNotifier.addItem(p);
                               },
-                        child:
-                            const Text('Add', style: TextStyle(fontSize: 12)),
+                        child: const Text('Add', style: TextStyle(fontSize: 12)),
                       )
               ],
             ),
@@ -369,3 +326,4 @@ class _CreateOrderScreenState extends ConsumerState<CreateOrderScreen> {
     }
   }
 }
+

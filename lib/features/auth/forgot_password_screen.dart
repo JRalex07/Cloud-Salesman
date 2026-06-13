@@ -1,15 +1,17 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/widgets/custom_button.dart';
-import '../../core/widgets/custom_text_field.dart';
-import '../../repositories/auth_repository.dart';
+import 'package:cloud_power_salesman/core/widgets/custom_button.dart';
+import 'package:cloud_power_salesman/core/widgets/custom_text_field.dart';
+import 'package:cloud_power_salesman/repositories/auth_repository.dart';
+import 'package:cloud_power_salesman/core/widgets/custom_snackbar.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({Key? key}) : super(key: key);
 
   @override
-  ConsumerState<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  ConsumerState<ForgotPasswordScreen> createState() =>
+      _ForgotPasswordScreenState();
 }
 
 class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
@@ -36,15 +38,31 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
     try {
       await ref.read(authRepositoryProvider).sendPasswordResetEmail(
-        _emailController.text.trim(),
-      );
-      setState(() {
-        _successMessage = 'Instruction link sent successfully! Check your inbox.';
-      });
+            _emailController.text.trim(),
+          );
+      if (mounted) {
+        setState(() {
+          _successMessage =
+              'Instruction link sent successfully! Check your inbox.';
+        });
+        CustomSnackbar.show(
+          context,
+          message: 'Password reset instructions sent! Please check your inbox.',
+          type: SnackbarType.success,
+        );
+      }
     } catch (e) {
-      setState(() {
-        _errorMessage = e.toString();
-      });
+      final cleanedErr = e.toString().replaceAll(RegExp(r'\[.*\]'), '');
+      if (mounted) {
+        setState(() {
+          _errorMessage = cleanedErr;
+        });
+        CustomSnackbar.show(
+          context,
+          message: cleanedErr,
+          type: SnackbarType.error,
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -96,7 +114,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                       ),
                       child: Text(
                         _successMessage!,
-                        style: TextStyle(color: Colors.green[800], fontSize: 13),
+                        style:
+                            TextStyle(color: Colors.green[800], fontSize: 13),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -122,7 +141,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     prefixIcon: Icons.email_outlined,
-                    validator: (v) => v == null || v.isEmpty ? 'Email is required' : null,
+                    validator: (v) =>
+                        v == null || v.isEmpty ? 'Email is required' : null,
                   ),
                   const SizedBox(height: 24),
                   CustomButton(
@@ -146,4 +166,3 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
     );
   }
 }
-

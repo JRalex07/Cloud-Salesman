@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/salesman.dart';
+import 'package:cloud_power_salesman/models/salesman.dart';
 
 // Firebase core object providers
 final firebaseAuthProvider =
@@ -20,42 +20,8 @@ final authStateChangesProvider = StreamProvider<User?>((ref) {
   return ref.watch(firebaseAuthProvider).authStateChanges();
 });
 
-// Bypass Session state class
-class BypassSession {
-  final bool isAuthenticated;
-  final String? uid;
-  final String? phone;
-
-  BypassSession({
-    this.isAuthenticated = false,
-    this.uid,
-    this.phone,
-  });
-}
-
-class BypassSessionNotifier extends StateNotifier<BypassSession> {
-  BypassSessionNotifier() : super(BypassSession());
-
-  void setSession({required String uid, required String phone}) {
-    state = BypassSession(isAuthenticated: true, uid: uid, phone: phone);
-  }
-
-  void clearSession() {
-    state = BypassSession();
-  }
-}
-
-final bypassSessionProvider =
-    StateNotifierProvider<BypassSessionNotifier, BypassSession>((ref) {
-  return BypassSessionNotifier();
-});
-
 // Reactive active UID provider
 final activeUidProvider = Provider<String?>((ref) {
-  final bypass = ref.watch(bypassSessionProvider);
-  if (bypass.isAuthenticated) {
-    return bypass.uid;
-  }
   final userAsync = ref.watch(authStateChangesProvider);
   return userAsync.valueOrNull?.uid;
 });
@@ -83,26 +49,6 @@ class SalesmanProfileNotifier extends StateNotifier<AsyncValue<Salesman?>> {
 
   Future<void> _fetchSalesmanProfile(String uid) async {
     try {
-      // Return a simulated local salesman profile if from bypass session
-      final bypass = _ref.read(bypassSessionProvider);
-      if (bypass.isAuthenticated && bypass.uid == uid) {
-        state = AsyncValue.data(Salesman(
-          uid: uid,
-          name: 'Sales Executive (Demo Bypass)',
-          phone: bypass.phone ?? '1234567890',
-          email: 'salesman@cloudpower.com',
-          photoUrl: '',
-          role: 'salesman',
-          assignedRouteId: 'demo-route-id',
-          assignedArea: 'Assigned Route Area',
-          isActive: true,
-          createdAt: DateTime.now(),
-          lastLogin: DateTime.now(),
-          fcmToken: '',
-        ));
-        return;
-      }
-
       // 1. Try finding by linked uid field first
       final queryByUid = await _firestore
           .collection('salesmen')
@@ -119,7 +65,7 @@ class SalesmanProfileNotifier extends StateNotifier<AsyncValue<Salesman?>> {
         return;
       }
 
-      // 2. Try searching by email or phone of current authenticated user
+      // 2. Try searching by email of current authenticated user to find matching salesman record
       final user = _auth.currentUser;
       if (user != null) {
         DocumentSnapshot<Map<String, dynamic>>? foundDoc;
@@ -131,63 +77,6 @@ class SalesmanProfileNotifier extends StateNotifier<AsyncValue<Salesman?>> {
               .get();
           if (query.docs.isNotEmpty) {
             foundDoc = query.docs.first;
-          }
-        }
-
-        if (foundDoc == null &&
-            user.phoneNumber != null &&
-            user.phoneNumber!.isNotEmpty) {
-          final phoneVariants = [user.phoneNumber!];
-          final cleanDigits = user.phoneNumber!.replaceAll(RegExp(r'\D'), '');
-          if (cleanDigits.length >= 10) {
-            final last10 = cleanDigits.substring(cleanDigits.length - 10);
-            if (!phoneVariants.contains(last10)) {
-              phoneVariants.add(last10);
-            }
-            final d0 = '0$last10';
-            if (!phoneVariants.contains(d0)) {
-              phoneVariants.add(d0);
-            }
-            final dp91 = '+91$last10';
-            if (!phoneVariants.contains(dp91)) {
-              phoneVariants.add(dp91);
-            }
-            final dp91s = '+91 $last10';
-            if (!phoneVariants.contains(dp91s)) {
-              phoneVariants.add(dp91s);
-            }
-            final d91 = '91$last10';
-            if (!phoneVariants.contains(d91)) {
-              phoneVariants.add(d91);
-            }
-          }
-          final query = await _firestore
-              .collection('salesmen')
-              .where('phone', whereIn: phoneVariants)
-              .limit(1)
-              .get();
-          if (query.docs.isNotEmpty) {
-            foundDoc = query.docs.first;
-          }
-
-          // Fallback robust matching based on stripping all non-digits and checking the last 10 digits
-          if (foundDoc == null && cleanDigits.length >= 10) {
-            final loginLast10 = cleanDigits.substring(cleanDigits.length - 10);
-            final allDocsQuery = await _firestore.collection('salesmen').get();
-            for (final doc in allDocsQuery.docs) {
-              final storedPhone = doc.data()['phone']?.toString();
-              if (storedPhone != null && storedPhone.isNotEmpty) {
-                final storedClean = storedPhone.replaceAll(RegExp(r'\D'), '');
-                if (storedClean.length >= 10) {
-                  final storedLast10 =
-                      storedClean.substring(storedClean.length - 10);
-                  if (storedLast10 == loginLast10) {
-                    foundDoc = doc;
-                    break;
-                  }
-                }
-              }
-            }
           }
         }
 

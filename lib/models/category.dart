@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+﻿import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Category {
   final String categoryId;
@@ -69,3 +69,4 @@ class Category {
     );
   }
 }
+

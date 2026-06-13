@@ -1,13 +1,14 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../models/shop.dart';
-import '../../models/order.dart';
-import '../../models/visit.dart';
-import '../../repositories/shop_repository.dart';
-import '../../repositories/visit_repository.dart';
-import '../../repositories/order_repository.dart';
-import '../../providers/global_providers.dart';
+import 'package:cloud_power_salesman/core/widgets/custom_snackbar.dart';
+import 'package:cloud_power_salesman/models/order.dart';
+import 'package:cloud_power_salesman/models/shop.dart';
+import 'package:cloud_power_salesman/models/visit.dart';
+import 'package:cloud_power_salesman/repositories/shop_repository.dart';
+import 'package:cloud_power_salesman/repositories/visit_repository.dart';
+import 'package:cloud_power_salesman/repositories/order_repository.dart';
+import 'package:cloud_power_salesman/providers/global_providers.dart';
 
 class ShopDetailScreen extends ConsumerWidget {
   final String shopId;
@@ -87,11 +88,12 @@ class ShopDetailScreen extends ConsumerWidget {
                       label: Text(shop.approved ? 'Approved' : 'Pending',
                           style: const TextStyle(fontSize: 12)),
                       backgroundColor:
-                          shop.approved ? Colors.green[50] : Colors.amber[50],
+                          shop.approved ? Colors.green[50] : Colors.orange[50],
                       labelStyle: TextStyle(
-                          color: shop.approved
-                              ? Colors.green[800]
-                              : Colors.amber[800]),
+                        color: shop.approved
+                            ? Colors.green[800]
+                            : Colors.orange[800],
+                      ),
                     )
                   ],
                 ),
@@ -177,19 +179,21 @@ class ShopDetailScreen extends ConsumerWidget {
                             .read(visitRepositoryProvider)
                             .checkIn(salesmanId, visit);
                         if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text(
-                                    'Registered active check-in on route successfully!')),
+                          CustomSnackbar.show(
+                            context,
+                            message:
+                                'Registered active check-in on route successfully!',
+                            type: SnackbarType.success,
                           );
                           context.go('/visits');
                         }
                       } catch (e) {
                         if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content: Text(
-                                    'Error registering visit check-in: $e')),
+                          CustomSnackbar.show(
+                            context,
+                            message:
+                                'Error registering visit check-in: ${e.toString()}',
+                            type: SnackbarType.error,
                           );
                         }
                       }
@@ -200,12 +204,12 @@ class ShopDetailScreen extends ConsumerWidget {
                 Expanded(
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green[700]),
+                        backgroundColor: Colors.blue[700]),
                     icon: const Icon(Icons.add_shopping_cart, size: 18),
                     label: const Text('Place Order',
                         style: TextStyle(fontWeight: FontWeight.bold)),
                     onPressed: () {
-                      context.push(
+                      context.go(
                           '/orders/create?shopId=${shop.shopId}&shopName=${Uri.encodeComponent(shop.shopName)}');
                     },
                   ),
@@ -266,7 +270,7 @@ class ShopDetailScreen extends ConsumerWidget {
                     trailing:
                         Icon(Icons.chevron_right, color: Colors.grey[400]),
                     onTap: () {
-                      context.push('/orders/history/${o.orderId}');
+                      context.go('/order/${o.orderId}');
                     },
                   ),
                 );
@@ -286,7 +290,7 @@ class ShopDetailScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(icon,
-              size: 18, color: isPhoneLink ? Colors.green : Colors.grey[600]),
+              size: 18, color: isPhoneLink ? Colors.blue : Colors.grey[600]),
           const SizedBox(width: 12),
           Expanded(
             child: Row(

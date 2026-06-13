@@ -1,8 +1,8 @@
 ﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/product.dart';
-import '../models/category.dart';
-import '../providers/global_providers.dart';
+import 'package:cloud_power_salesman/models/product.dart';
+import 'package:cloud_power_salesman/models/category.dart';
+import 'package:cloud_power_salesman/providers/global_providers.dart';
 
 abstract class ProductRepository {
   Stream<List<Product>> getActiveProducts();
@@ -20,8 +20,10 @@ class FirebaseProductRepository implements ProductRepository {
   @override
   Stream<List<Product>> getActiveProducts() {
     _checkAndSeedProducts();
-    return _firestore.collection('products').snapshots().map((snapshot) =>
-        snapshot.docs
+    return _firestore
+        .collection('products')
+        .snapshots()
+        .map((snapshot) => snapshot.docs
             .map((doc) => Product.fromJson(doc.data(), id: doc.id))
             .where((p) => p.active)
             .toList());
@@ -40,14 +42,17 @@ class FirebaseProductRepository implements ProductRepository {
 
   @override
   Stream<List<Category>> getCategories() {
-    return _firestore.collection('categories').snapshots().map((snapshot) {
-      final list = snapshot.docs
-          .map((doc) => Category.fromJson(doc.data(), id: doc.id))
-          .where((c) => c.isActive)
-          .toList();
-      list.sort((a, b) => a.priority.compareTo(b.priority));
-      return list;
-    });
+    return _firestore
+        .collection('categories')
+        .snapshots()
+        .map((snapshot) {
+          final list = snapshot.docs
+              .map((doc) => Category.fromJson(doc.data(), id: doc.id))
+              .where((c) => c.isActive)
+              .toList();
+          list.sort((a, b) => a.priority.compareTo(b.priority));
+          return list;
+        });
   }
 
   Future<void> _checkAndSeedProducts() async {
@@ -64,7 +69,7 @@ class FirebaseProductRepository implements ProductRepository {
   Future<void> _seedInitialProducts() async {
     final batch = _firestore.batch();
     final now = DateTime.now();
-
+    
     final initialProducts = [
       // Beverages
       Product(
@@ -150,8 +155,7 @@ class FirebaseProductRepository implements ProductRepository {
       Product(
         productId: 'sn_nacho_cheese',
         name: 'Nacho Cheese Tortillas',
-        description:
-            'Stone-ground corn tortillas baked with sharp cheddar seasoning.',
+        description: 'Stone-ground corn tortillas baked with sharp cheddar seasoning.',
         image: '',
         category: 'Snacks',
         wholesalePrice: 1.10,
@@ -164,8 +168,7 @@ class FirebaseProductRepository implements ProductRepository {
       Product(
         productId: 'sn_almonds_200',
         name: 'Roasted Salted Almonds 200g',
-        description:
-            'Premium whole California almonds slow-roasted and salted.',
+        description: 'Premium whole California almonds slow-roasted and salted.',
         image: '',
         category: 'Snacks',
         wholesalePrice: 3.20,
@@ -193,8 +196,7 @@ class FirebaseProductRepository implements ProductRepository {
       Product(
         productId: 'dy_milk_1000',
         name: 'Fresh Whole Milk 1L',
-        description:
-            'Pasteurized, homogenized pure cow milk with essential Vitamin D.',
+        description: 'Pasteurized, homogenized pure cow milk with essential Vitamin D.',
         image: '',
         category: 'Dairies',
         wholesalePrice: 1.00,
@@ -220,8 +222,7 @@ class FirebaseProductRepository implements ProductRepository {
       Product(
         productId: 'dy_cheese_250',
         name: 'Cheddar Cheese Block 250g',
-        description:
-            'Aged sharp cheddar cheese block with intense complex bite.',
+        description: 'Aged sharp cheddar cheese block with intense complex bite.',
         image: '',
         category: 'Dairies',
         wholesalePrice: 2.60,
@@ -236,8 +237,7 @@ class FirebaseProductRepository implements ProductRepository {
       Product(
         productId: 'hh_dish_wash_500',
         name: 'Ultra Dishwasher Liquid 500ml',
-        description:
-            'Concentrated lemon grease-cutting detergent with skin moisturizers.',
+        description: 'Concentrated lemon grease-cutting detergent with skin moisturizers.',
         image: '',
         category: 'Household',
         wholesalePrice: 1.25,
@@ -250,8 +250,7 @@ class FirebaseProductRepository implements ProductRepository {
       Product(
         productId: 'hh_laundry_1000',
         name: 'Eco Laundry Detergent 1L',
-        description:
-            'Plant-derived, dye-free, high-efficiency liquid detergent formulation.',
+        description: 'Plant-derived, dye-free, high-efficiency liquid detergent formulation.',
         image: '',
         category: 'Household',
         wholesalePrice: 3.90,
@@ -266,8 +265,7 @@ class FirebaseProductRepository implements ProductRepository {
       Product(
         productId: 'cf_chocolate_100',
         name: 'Milk Chocolate Bar 100g',
-        description:
-            'Silky smooth alpine milk chocolate with premium cocoa solids.',
+        description: 'Silky smooth alpine milk chocolate with premium cocoa solids.',
         image: '',
         category: 'Confectionery',
         wholesalePrice: 1.00,
@@ -280,8 +278,7 @@ class FirebaseProductRepository implements ProductRepository {
       Product(
         productId: 'cf_caramel_candy',
         name: 'Peanut Caramel Candy Bar',
-        description:
-            'Chewy, sweet milk caramel filled with freshly roasted peanuts.',
+        description: 'Chewy, sweet milk caramel filled with freshly roasted peanuts.',
         image: '',
         category: 'Confectionery',
         wholesalePrice: 0.65,
@@ -327,3 +324,4 @@ class FirebaseProductRepository implements ProductRepository {
 final productRepositoryProvider = Provider<ProductRepository>((ref) {
   return FirebaseProductRepository(ref.watch(firestoreProvider));
 });
+

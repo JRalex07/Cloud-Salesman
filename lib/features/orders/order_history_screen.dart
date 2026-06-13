@@ -1,9 +1,9 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../models/order.dart';
-import '../../repositories/order_repository.dart';
-import '../../providers/global_providers.dart';
+import 'package:cloud_power_salesman/models/order.dart';
+import 'package:cloud_power_salesman/repositories/order_repository.dart';
+import 'package:cloud_power_salesman/providers/global_providers.dart';
 
 class OrderHistoryScreen extends ConsumerWidget {
   const OrderHistoryScreen({Key? key}) : super(key: key);
@@ -63,7 +63,8 @@ class OrderHistoryScreen extends ConsumerWidget {
                 child: InkWell(
                   borderRadius: BorderRadius.circular(12),
                   onTap: () {
-                    context.push('/orders/history/${o.orderId}');
+                    context.go('/order/${o.orderId}');
+                    debugPrint('Tapped order ${o.orderId}');
                   },
                   child: Padding(
                     padding: const EdgeInsets.all(16),

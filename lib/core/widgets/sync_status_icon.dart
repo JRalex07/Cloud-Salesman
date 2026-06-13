@@ -1,7 +1,8 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../providers/sync_provider.dart';
+import 'custom_snackbar.dart';
+import 'package:cloud_power_salesman/providers/sync_provider.dart';
 
 class SyncStatusIcon extends ConsumerStatefulWidget {
   const SyncStatusIcon({super.key});
@@ -58,9 +59,6 @@ class _SyncStatusIconState extends ConsumerState<SyncStatusIcon>
   @override
   Widget build(BuildContext context) {
     final syncState = ref.watch(syncProvider);
-    if (syncState == null) {
-      return const SizedBox.shrink();
-    }
     _updateAnimations(syncState.isSyncing);
 
     // Determine status color & details
@@ -92,20 +90,19 @@ class _SyncStatusIconState extends ConsumerState<SyncStatusIcon>
       child: GestureDetector(
         onTap: () async {
           if (!syncState.isOnline) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text("Cannot sync while device is offline."),
-                backgroundColor: Colors.redAccent,
-              ),
+            CustomSnackbar.show(
+              context,
+              message: "Cannot sync while device is offline.",
+              type: SnackbarType.error,
             );
             return;
           }
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Manually forcing cloud synchronization..."),
-              duration: Duration(milliseconds: 1500),
-            ),
+          CustomSnackbar.show(
+            context,
+            message: "Manually forcing cloud synchronization...",
+            type: SnackbarType.info,
+            duration: const Duration(milliseconds: 1500),
           );
 
           await ref.read(syncProvider.notifier).autoSync();
@@ -113,19 +110,17 @@ class _SyncStatusIconState extends ConsumerState<SyncStatusIcon>
           if (mounted) {
             final latestState = ref.read(syncProvider);
             if (latestState.errorMessage != null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(latestState.errorMessage!),
-                  backgroundColor: Colors.redAccent,
-                ),
+              CustomSnackbar.show(
+                context,
+                message: latestState.errorMessage!,
+                type: SnackbarType.error,
               );
             } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                      "Sync complete! Pending: ${latestState.pendingOrders + latestState.pendingVisits}"),
-                  backgroundColor: Colors.teal,
-                ),
+              CustomSnackbar.show(
+                context,
+                message:
+                    "Sync complete! Pending: ${latestState.pendingOrders + latestState.pendingVisits}",
+                type: SnackbarType.success,
               );
             }
           }

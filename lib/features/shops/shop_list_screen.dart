@@ -1,8 +1,8 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../models/shop.dart';
-import '../../repositories/shop_repository.dart';
+import 'package:cloud_power_salesman/models/shop.dart';
+import 'package:cloud_power_salesman/repositories/shop_repository.dart';
 
 class ShopListScreen extends ConsumerStatefulWidget {
   const ShopListScreen({Key? key}) : super(key: key);
@@ -84,10 +84,8 @@ class _ShopListScreenState extends ConsumerState<ShopListScreen> {
                         },
                       )
                     : null,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
             ),
           ),
@@ -206,9 +204,7 @@ class _ShopListScreenState extends ConsumerState<ShopListScreen> {
                     Text(
                       shop.shopName,
                       style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
+                          fontWeight: FontWeight.bold, fontSize: 16),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -220,19 +216,14 @@ class _ShopListScreenState extends ConsumerState<ShopListScreen> {
                     const SizedBox(height: 2),
                     Row(
                       children: [
-                        const Icon(
-                          Icons.pin_drop,
-                          size: 14,
-                          color: Colors.blue,
-                        ),
+                        const Icon(Icons.pin_drop,
+                            size: 14, color: Colors.blue),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             shop.address,
                             style: TextStyle(
-                              color: Colors.grey[500],
-                              fontSize: 12,
-                            ),
+                                color: Colors.grey[500], fontSize: 12),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -244,7 +235,7 @@ class _ShopListScreenState extends ConsumerState<ShopListScreen> {
               ),
               const SizedBox(width: 8),
               if (shop.approved)
-                const Icon(Icons.verified, color: Colors.blue, size: 20)
+                const Icon(Icons.verified, color: Colors.green, size: 20)
               else
                 Icon(Icons.pending_actions, color: Colors.amber[700], size: 20),
             ],

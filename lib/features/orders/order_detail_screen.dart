@@ -1,9 +1,9 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../models/order.dart';
-import '../../models/order_timeline.dart';
-import '../../providers/global_providers.dart';
-import '../../repositories/order_repository.dart';
+import 'package:cloud_power_salesman/models/order.dart';
+import 'package:cloud_power_salesman/models/order_timeline.dart';
+import 'package:cloud_power_salesman/providers/global_providers.dart';
+import 'package:cloud_power_salesman/repositories/order_repository.dart';
 
 class OrderDetailScreen extends ConsumerWidget {
   final String orderId;
@@ -12,8 +12,6 @@ class OrderDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final orderRepo = ref.read(orderRepositoryProvider);
-
     return Scaffold(
       appBar: AppBar(
         title: const Text('Order Summary Details'),
@@ -31,8 +29,7 @@ class OrderDetailScreen extends ConsumerWidget {
           final list = snapshot.data ?? [];
           final oMatches = list.where((ord) => ord.orderId == orderId).toList();
           if (oMatches.isEmpty) {
-            return const Center(
-                child: Text('Sales order details not found or inaccessible.'));
+            return const Center(child: Text('Sales order details not found or inaccessible.'));
           }
 
           final Order order = oMatches.first;
@@ -44,15 +41,11 @@ class OrderDetailScreen extends ConsumerWidget {
               children: [
                 _buildSummaryBox(order),
                 const SizedBox(height: 20),
-                const Text('Items Ordered List',
-                    style:
-                        TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const Text('Items Ordered List', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 8),
                 _buildItemsList(order),
                 const SizedBox(height: 24),
-                const Text('Fulfillment Tracking Logs',
-                    style:
-                        TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const Text('Fulfillment Tracking Logs', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 12),
                 _buildTimelineStepper(ref, order.orderId),
               ],
@@ -76,27 +69,18 @@ class OrderDetailScreen extends ConsumerWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Order Booking ID:',
-                        style:
-                            TextStyle(color: Colors.grey[500], fontSize: 12)),
+                    Text('Order Booking ID:', style: TextStyle(color: Colors.grey[500], fontSize: 12)),
                     const SizedBox(height: 4),
-                    Text(o.orderId,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text(o.orderId, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   ],
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.blue[50],
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Text(o.orderStatus,
-                      style: TextStyle(
-                          color: Colors.blue[800],
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12)),
+                  child: Text(o.orderStatus, style: TextStyle(color: Colors.blue[800], fontWeight: FontWeight.bold, fontSize: 12)),
                 )
               ],
             ),
@@ -104,47 +88,31 @@ class OrderDetailScreen extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Client Store Name:',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 13)),
-                Text(o.shopName,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 13)),
+                Text('Client Store Name:', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+                Text(o.shopName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
               ],
             ),
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Date Booked:',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 13)),
-                Text(o.createdAt.toLocal().toString().split('.')[0],
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w500, fontSize: 13)),
+                Text('Date Booked:', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+                Text(o.createdAt.toLocal().toString().split('.')[0], style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
               ],
             ),
             const SizedBox(height: 8),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Payment Collection Status:',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 13)),
-                Text(o.paymentStatus,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
-                        color: Colors.green)),
+                Text('Payment Collection Status:', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+                Text(o.paymentStatus, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.green)),
               ],
             ),
             if (o.notes.isNotEmpty) ...[
               const Divider(height: 24),
-              const Text('Assigned Instructions:',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+              const Text('Assigned Instructions:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
               const SizedBox(height: 4),
-              Text(o.notes,
-                  style: TextStyle(
-                      color: Colors.grey[600],
-                      fontStyle: FontStyle.italic,
-                      fontSize: 13)),
+              Text(o.notes, style: TextStyle(color: Colors.grey[600], fontStyle: FontStyle.italic, fontSize: 13)),
             ]
           ],
         ),
@@ -170,20 +138,13 @@ class OrderDetailScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(item.name,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 13)),
+                      Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                       const SizedBox(height: 4),
-                      Text(
-                          'Qty: ${item.quantity}  •  Rate: ₹${item.price.toStringAsFixed(2)}  •  GST: ${item.gstPercentage}%',
-                          style:
-                              TextStyle(color: Colors.grey[500], fontSize: 11)),
+                      Text('Qty: ${item.quantity}  •  Rate: ₹${item.price.toStringAsFixed(2)}  •  GST: ${item.gstPercentage}%', style: TextStyle(color: Colors.grey[500], fontSize: 11)),
                     ],
                   ),
                 ),
-                Text('₹${item.total.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 13)),
+                Text('₹${item.total.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
               ],
             ),
           );
@@ -208,8 +169,7 @@ class OrderDetailScreen extends ConsumerWidget {
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Center(
-                child: Text('No tracking event logs registered yet.',
-                    style: TextStyle(color: Colors.grey[500])),
+                child: Text('No tracking event logs registered yet.', style: TextStyle(color: Colors.grey[500])),
               ),
             ),
           );
@@ -234,8 +194,7 @@ class OrderDetailScreen extends ConsumerWidget {
                         CircleAvatar(
                           radius: 12,
                           backgroundColor: Colors.blue.withOpacity(0.1),
-                          child: Icon(Icons.check_circle_outline,
-                              color: Theme.of(context).primaryColor, size: 16),
+                          child: Icon(Icons.check_circle_outline, color: Theme.of(context).primaryColor, size: 16),
                         ),
                         if (!isLast)
                           Container(
@@ -253,31 +212,17 @@ class OrderDetailScreen extends ConsumerWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(log.status,
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14)),
+                              Text(log.status, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                               Text(
-                                log.timestamp
-                                    .toLocal()
-                                    .toString()
-                                    .split(' ')[1]
-                                    .substring(0, 5),
-                                style: TextStyle(
-                                    color: Colors.grey[400], fontSize: 11),
+                                log.timestamp.toLocal().toString().split(' ')[1].substring(0, 5),
+                                style: TextStyle(color: Colors.grey[400], fontSize: 11),
                               ),
                             ],
                           ),
                           const SizedBox(height: 4),
-                          Text(log.message,
-                              style: TextStyle(
-                                  color: Colors.grey[600], fontSize: 12)),
+                          Text(log.message, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
                           const SizedBox(height: 2),
-                          Text('Updated by ID: ${log.updatedBy}',
-                              style: TextStyle(
-                                  color: Colors.grey[400],
-                                  fontSize: 10,
-                                  fontStyle: FontStyle.italic)),
+                          Text('Updated by ID: ${log.updatedBy}', style: TextStyle(color: Colors.grey[400], fontSize: 10, fontStyle: FontStyle.italic)),
                           const SizedBox(height: 16),
                         ],
                       ),
@@ -292,3 +237,4 @@ class OrderDetailScreen extends ConsumerWidget {
     );
   }
 }
+

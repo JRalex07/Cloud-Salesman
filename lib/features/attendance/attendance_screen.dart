@@ -1,8 +1,9 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../models/attendance.dart';
-import '../../repositories/attendance_repository.dart';
-import '../../providers/global_providers.dart';
+import 'package:cloud_power_salesman/core/widgets/custom_snackbar.dart';
+import 'package:cloud_power_salesman/models/attendance.dart';
+import 'package:cloud_power_salesman/repositories/attendance_repository.dart';
+import 'package:cloud_power_salesman/providers/global_providers.dart';
 
 class AttendanceScreen extends ConsumerStatefulWidget {
   const AttendanceScreen({Key? key}) : super(key: key);
@@ -23,7 +24,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
   }
 
   Future<void> _checkTodayShiftStatus() async {
-    final salesman = ref.read(salesmanProfileProvider).asData?.value;
+    final salesman = ref.read(salesmanProfileProvider).valueOrNull;
     if (salesman == null) return;
 
     setState(() {
@@ -31,25 +32,28 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     });
 
     try {
-      final String todayDate = DateTime.now().toLocal().toString().split(
-        ' ',
-      )[0];
+      final String todayDate =
+          DateTime.now().toLocal().toString().split(' ')[0];
       final att = await ref
           .read(attendanceRepositoryProvider)
           .getTodayAttendance(salesman.uid, todayDate);
-      setState(() {
-        _todayAttendance = att;
-        _isLoadingToday = false;
-      });
+      if (mounted) {
+        setState(() {
+          _todayAttendance = att;
+          _isLoadingToday = false;
+        });
+      }
     } catch (_) {
-      setState(() {
-        _isLoadingToday = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoadingToday = false;
+        });
+      }
     }
   }
 
   Future<void> _startShift() async {
-    final salesman = ref.read(salesmanProfileProvider).asData?.value;
+    final salesman = ref.read(salesmanProfileProvider).valueOrNull;
     if (salesman == null) return;
 
     setState(() {
@@ -58,9 +62,8 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
 
     try {
       final String uid = salesman.uid;
-      final String todayDate = DateTime.now().toLocal().toString().split(
-        ' ',
-      )[0];
+      final String todayDate =
+          DateTime.now().toLocal().toString().split(' ')[0];
       final String uniqueId = 'ATT-${DateTime.now().millisecondsSinceEpoch}';
 
       final attendance = Attendance(
@@ -77,20 +80,33 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
       );
 
       await ref.read(attendanceRepositoryProvider).startDuty(uid, attendance);
-      _checkTodayShiftStatus();
+      await _checkTodayShiftStatus();
+      if (mounted) {
+        CustomSnackbar.show(
+          context,
+          message: 'Duty shift started successfully!',
+          type: SnackbarType.success,
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to start duty shift: $e')));
+      if (mounted) {
+        CustomSnackbar.show(
+          context,
+          message: 'Failed to start duty shift: ${e.toString()}',
+          type: SnackbarType.error,
+        );
+      }
     } finally {
-      setState(() {
-        _isActioningShift = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isActioningShift = false;
+        });
+      }
     }
   }
 
   Future<void> _endShift() async {
-    final salesman = ref.read(salesmanProfileProvider).asData?.value;
+    final salesman = ref.read(salesmanProfileProvider).valueOrNull;
     if (salesman == null || _todayAttendance == null) return;
 
     setState(() {
@@ -98,30 +114,41 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
     });
 
     try {
-      await ref
-          .read(attendanceRepositoryProvider)
-          .endDuty(
+      await ref.read(attendanceRepositoryProvider).endDuty(
             salesman.uid,
             _todayAttendance!.attendanceId,
             DateTime.now(),
             40.7180, // capture final exit latitude representatively
             -74.0090,
           );
-      _checkTodayShiftStatus();
+      await _checkTodayShiftStatus();
+      if (mounted) {
+        CustomSnackbar.show(
+          context,
+          message: 'Duty shift ended successfully!',
+          type: SnackbarType.success,
+        );
+      }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to end duty shift: $e')));
+      if (mounted) {
+        CustomSnackbar.show(
+          context,
+          message: 'Failed to end duty shift: ${e.toString()}',
+          type: SnackbarType.error,
+        );
+      }
     } finally {
-      setState(() {
-        _isActioningShift = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isActioningShift = false;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final salesman = ref.watch(salesmanProfileProvider).asData?.value;
+    final salesman = ref.watch(salesmanProfileProvider).valueOrNull;
 
     if (salesman == null) {
       return const Scaffold(body: Center(child: Text('Session missing.')));
@@ -131,7 +158,9 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
         _todayAttendance != null && _todayAttendance!.endDutyTime == null;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Shift & Attendance')),
+      appBar: AppBar(
+        title: const Text('Shift & Attendance'),
+      ),
       body: _isLoadingToday
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -141,10 +170,9 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                 children: [
                   _buildShiftControlCard(activeOnDuty),
                   const SizedBox(height: 24),
-                  const Text(
-                    'Past Work Attendance Sheets',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
+                  const Text('Past Work Attendance Sheets',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
                   _buildAttendanceHistorySection(salesman.uid),
                 ],
@@ -154,9 +182,8 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
   }
 
   Widget _buildShiftControlCard(bool activeOnDuty) {
-    final Color cardBg = activeOnDuty
-        ? Colors.green[50]!
-        : Colors.blueGrey[50]!;
+    final Color cardBg =
+        activeOnDuty ? Colors.green[50]! : Colors.blueGrey[50]!;
     final Color iconCol = activeOnDuty ? Colors.green : Colors.blueGrey;
 
     return Card(
@@ -178,31 +205,24 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                             ? 'On Duty Shift: ACTIVE'
                             : 'Shift: NOT STARTED',
                         style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: iconCol,
-                        ),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: iconCol),
                       ),
                       const SizedBox(height: 4),
                       if (activeOnDuty)
                         Text(
                           'Started at: ${_todayAttendance!.startDutyTime?.toLocal().toString().split('.')[0].substring(11, 16) ?? ''}',
-                          style: TextStyle(
-                            color: Colors.grey[700],
-                            fontSize: 13,
-                          ),
+                          style:
+                              TextStyle(color: Colors.grey[700], fontSize: 13),
                         )
                       else
-                        Text(
-                          'Book routes and log client drop offsets.',
-                          style: TextStyle(
-                            color: Colors.grey[500],
-                            fontSize: 12,
-                          ),
-                        ),
+                        Text('Book routes and log client drop offsets.',
+                            style: TextStyle(
+                                color: Colors.grey[500], fontSize: 12)),
                     ],
                   ),
-                ),
+                )
               ],
             ),
             const Divider(height: 32),
@@ -224,10 +244,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                         height: 20,
                         width: 20,
                         child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
-                        ),
-                      )
+                            color: Colors.white, strokeWidth: 2))
                     : Text(
                         activeOnDuty
                             ? 'Click to End Duty Shift'
@@ -235,7 +252,7 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
               ),
-            ),
+            )
           ],
         ),
       ),
@@ -259,10 +276,8 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
-              child: Text(
-                'No historical duty attendance logs tracked yet.',
-                style: TextStyle(color: Colors.grey[400]),
-              ),
+              child: Text('No historical duty attendance logs tracked yet.',
+                  style: TextStyle(color: Colors.grey[400])),
             ),
           );
         }
@@ -278,26 +293,20 @@ class _AttendanceScreenState extends ConsumerState<AttendanceScreen> {
             return Card(
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
-                title: Text(
-                  a.date,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
+                title: Text(a.date,
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
                 subtitle: Text(
                   ended
-                      ? 'Duration: ${a.duration} mins â€¢ ${a.startDutyTime?.toLocal().toString().split(' ')[1].substring(0, 5) ?? ''} to ${a.endDutyTime?.toLocal().toString().split(' ')[1].substring(0, 5) ?? ''}'
+                      ? 'Duration: ${a.duration} mins • ${a.startDutyTime?.toLocal().toString().split(' ')[1].substring(0, 5) ?? ''} to ${a.endDutyTime?.toLocal().toString().split(' ')[1].substring(0, 5) ?? ''}'
                       : 'Duty In-progress...',
                   style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                 ),
                 trailing: Chip(
-                  visualDensity: VisualDensity.compact,
-                  label: Text(
-                    a.status,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: ended ? Colors.green[800] : Colors.blue[800],
-                    ),
-                  ),
+                  label: Text(a.status,
+                      style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: ended ? Colors.green[800] : Colors.blue[800])),
                   backgroundColor: ended ? Colors.green[50] : Colors.blue[50],
                 ),
               ),

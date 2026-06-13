@@ -1,9 +1,10 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/widgets/custom_button.dart';
-import '../../providers/cart_provider.dart';
-import '../../providers/global_providers.dart';
+import 'package:cloud_power_salesman/core/widgets/custom_button.dart';
+import 'package:cloud_power_salesman/core/widgets/custom_snackbar.dart';
+import 'package:cloud_power_salesman/providers/cart_provider.dart';
+import 'package:cloud_power_salesman/providers/global_providers.dart';
 
 class CartScreen extends ConsumerStatefulWidget {
   final String shopId;
@@ -49,7 +50,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
 
     try {
       ref.read(cartProvider.notifier).setNotes(_notesController.text);
-
+      
       double disc = double.tryParse(_discountController.text) ?? 0.0;
       ref.read(cartProvider.notifier).setDiscount(disc);
 
@@ -60,9 +61,10 @@ class _CartScreenState extends ConsumerState<CartScreen> {
           );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Bulk Sales Order Booked Successfully!')),
+        CustomSnackbar.show(
+          context,
+          message: 'Bulk Sales Order Booked Successfully!',
+          type: SnackbarType.success,
         );
         context.go('/dashboard');
       }
@@ -71,8 +73,10 @@ class _CartScreenState extends ConsumerState<CartScreen> {
         setState(() {
           _isPlacing = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to book sales order: $e')),
+        CustomSnackbar.show(
+          context,
+          message: 'Failed to book sales order: ${e.toString()}',
+          type: SnackbarType.error,
         );
       }
     }
@@ -81,7 +85,6 @@ class _CartScreenState extends ConsumerState<CartScreen> {
   @override
   Widget build(BuildContext context) {
     final cartState = ref.watch(cartProvider);
-    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
@@ -97,9 +100,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Buying for: ${widget.shopName}',
-                            style: const TextStyle(
-                                fontWeight: FontWeight.bold, fontSize: 16)),
+                        Text('Buying for: ${widget.shopName}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                         const SizedBox(height: 16),
                         _buildCartItemsList(cartState),
                         const SizedBox(height: 20),
@@ -125,8 +126,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
         children: [
           Icon(Icons.shopping_cart_outlined, size: 70, color: Colors.grey[300]),
           const SizedBox(height: 20),
-          const Text('Your shopping cart is empty.',
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+          const Text('Your shopping cart is empty.', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
           const SizedBox(height: 8),
           ElevatedButton(
             child: const Text('Browse FMCG Catalog'),
@@ -154,27 +154,19 @@ class _CartScreenState extends ConsumerState<CartScreen> {
           if (p == null) return const SizedBox();
 
           return ListTile(
-            title: Text(p.name,
-                style:
-                    const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-            subtitle: Text(
-                'Unit cost: ₹${p.wholesalePrice.toStringAsFixed(2)} • GST: ${p.gst}%',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+            title: Text(p.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+            subtitle: Text('Unit cost: ₹${p.wholesalePrice.toStringAsFixed(2)} • GST: ${p.gst}%', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
-                  icon: const Icon(Icons.remove_circle_outline,
-                      size: 20, color: Colors.blue),
-                  onPressed: () =>
-                      cartNotifier.updateQuantity(p.productId, q - 1),
+                  icon: const Icon(Icons.remove_circle_outline, size: 20, color: Colors.blue),
+                  onPressed: () => cartNotifier.updateQuantity(p.productId, q - 1),
                 ),
                 Text('$q', style: const TextStyle(fontWeight: FontWeight.bold)),
                 IconButton(
-                  icon: const Icon(Icons.add_circle_outline,
-                      size: 20, color: Colors.blue),
-                  onPressed: () =>
-                      cartNotifier.updateQuantity(p.productId, q + 1),
+                  icon: const Icon(Icons.add_circle_outline, size: 20, color: Colors.blue),
+                  onPressed: () => cartNotifier.updateQuantity(p.productId, q + 1),
                 ),
               ],
             ),
@@ -204,8 +196,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                 controller: _discountController,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 ),
                 onChanged: (val) {
                   final parsed = double.tryParse(val) ?? 0.0;
@@ -238,29 +229,19 @@ class _CartScreenState extends ConsumerState<CartScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Bill Summary Breakdown',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            const Text('Bill Summary Breakdown', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
             const Divider(height: 24),
-            _buildDetailSummaryRow(
-                'Original Subtotal:', '₹${state.subtotal.toStringAsFixed(2)}'),
+            _buildDetailSummaryRow('Original Subtotal:', '₹${state.subtotal.toStringAsFixed(2)}'),
             const SizedBox(height: 8),
-            _buildDetailSummaryRow('Applied Cash Discount:',
-                '-₹${state.discountAmount.toStringAsFixed(2)}',
-                valueStyle: const TextStyle(
-                    color: Colors.red, fontWeight: FontWeight.bold)),
+            _buildDetailSummaryRow('Applied Cash Discount:', '-₹${state.discountAmount.toStringAsFixed(2)}', valueStyle: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            _buildDetailSummaryRow('Calculated GST Duties:',
-                '+₹${state.totalGst.toStringAsFixed(2)}'),
+            _buildDetailSummaryRow('Calculated GST Duties:', '+₹${state.totalGst.toStringAsFixed(2)}'),
             const Divider(height: 24),
             _buildDetailSummaryRow(
               'Cumulative Grand Total:',
               '₹${state.grandTotal.toStringAsFixed(2)}',
-              labelStyle:
-                  const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              valueStyle: const TextStyle(
-                  fontSize: 18,
-                  color: Colors.blue,
-                  fontWeight: FontWeight.bold),
+              labelStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              valueStyle: const TextStyle(fontSize: 18, color: Colors.blue, fontWeight: FontWeight.bold),
             )
           ],
         ),
@@ -283,18 +264,14 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     );
   }
 
-  Widget _buildDetailSummaryRow(String label, String value,
-      {TextStyle? labelStyle, TextStyle? valueStyle}) {
+  Widget _buildDetailSummaryRow(String label, String value, {TextStyle? labelStyle, TextStyle? valueStyle}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label,
-            style:
-                labelStyle ?? TextStyle(color: Colors.grey[600], fontSize: 13)),
-        Text(value,
-            style: valueStyle ??
-                const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+        Text(label, style: labelStyle ?? TextStyle(color: Colors.grey[600], fontSize: 13)),
+        Text(value, style: valueStyle ?? const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
       ],
     );
   }
 }
+

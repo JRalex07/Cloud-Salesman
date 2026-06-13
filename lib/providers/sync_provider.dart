@@ -1,9 +1,9 @@
 ﻿import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import '../repositories/order_repository.dart';
-import '../repositories/visit_repository.dart';
-import '../services/offline_sync_service.dart';
+import 'package:cloud_power_salesman/repositories/order_repository.dart';
+import 'package:cloud_power_salesman/repositories/visit_repository.dart';
+import 'package:cloud_power_salesman/services/offline_sync_service.dart';
 
 // State representing synchronization health
 class SyncState {
@@ -58,23 +58,19 @@ class SyncNotifier extends StateNotifier<SyncState> {
     Future.microtask(() async {
       try {
         final results = await Connectivity().checkConnectivity();
-        final isNowOnline =
-            results.isNotEmpty && !results.contains(ConnectivityResult.none);
+        final isNowOnline = results.isNotEmpty && !results.contains(ConnectivityResult.none);
         updateConnectionStatus(isNowOnline);
       } catch (_) {}
     });
 
     // Listen for live connectivity status updates
-    _connectivitySubscription =
-        Connectivity().onConnectivityChanged.listen((results) {
-      final isNowOnline =
-          results.isNotEmpty && !results.contains(ConnectivityResult.none);
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((results) {
+      final isNowOnline = results.isNotEmpty && !results.contains(ConnectivityResult.none);
       updateConnectionStatus(isNowOnline);
     });
 
     // Check signals and sync queue every 15 seconds
-    _heartbeatTimer =
-        Timer.periodic(const Duration(seconds: 15), (timer) async {
+    _heartbeatTimer = Timer.periodic(const Duration(seconds: 15), (timer) async {
       await autoSync();
     });
   }
@@ -140,3 +136,4 @@ final offlineSyncServiceProvider = Provider<OfflineSyncService>((ref) {
 final syncProvider = StateNotifierProvider<SyncNotifier, SyncState>((ref) {
   return SyncNotifier(ref.watch(offlineSyncServiceProvider));
 });
+

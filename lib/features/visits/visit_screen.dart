@@ -2,9 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../models/visit.dart';
-import '../../repositories/visit_repository.dart';
-import '../../providers/global_providers.dart';
+import 'package:cloud_power_salesman/core/widgets/custom_snackbar.dart';
+import 'package:cloud_power_salesman/models/visit.dart';
+import 'package:cloud_power_salesman/repositories/visit_repository.dart';
+import 'package:cloud_power_salesman/providers/global_providers.dart';
 
 class VisitScreen extends ConsumerStatefulWidget {
   const VisitScreen({Key? key}) : super(key: key);
@@ -36,29 +37,35 @@ class _VisitScreenState extends ConsumerState<VisitScreen> {
   }
 
   Future<void> _checkActiveSession() async {
-    final curSalesman = ref.read(salesmanProfileProvider).asData?.value;
+    final curSalesman = ref.read(salesmanProfileProvider).valueOrNull;
     if (curSalesman == null) return;
 
-    setState(() {
-      _checkingActive = true;
-    });
+    if (mounted) {
+      setState(() {
+        _checkingActive = true;
+      });
+    }
 
     try {
       final active = await ref
           .read(visitRepositoryProvider)
           .getActiveVisit(curSalesman.uid);
-      setState(() {
-        _activeVisit = active;
-        _checkingActive = false;
-      });
+      if (mounted) {
+        setState(() {
+          _activeVisit = active;
+          _checkingActive = false;
+        });
+      }
 
       if (active != null && active.checkInTime != null) {
         _startTimer(active.checkInTime!);
       }
     } catch (_) {
-      setState(() {
-        _checkingActive = false;
-      });
+      if (mounted) {
+        setState(() {
+          _checkingActive = false;
+        });
+      }
     }
   }
 
@@ -75,21 +82,21 @@ class _VisitScreenState extends ConsumerState<VisitScreen> {
   }
 
   Future<void> _handleCheckout() async {
-    final curSalesman = ref.read(salesmanProfileProvider).asData?.value;
+    final curSalesman = ref.read(salesmanProfileProvider).valueOrNull;
     if (_activeVisit == null || curSalesman == null) return;
 
-    setState(() {
-      _isCheckingOut = true;
-    });
+    if (mounted) {
+      setState(() {
+        _isCheckingOut = true;
+      });
+    }
 
     // Capture physical exit longitude & latitude
     const double finalLat = 40.7180;
     const double finalLng = -74.0090;
 
     try {
-      await ref
-          .read(visitRepositoryProvider)
-          .checkOut(
+      await ref.read(visitRepositoryProvider).checkOut(
             curSalesman.uid,
             _activeVisit!.visitId,
             finalLat,
@@ -99,43 +106,47 @@ class _VisitScreenState extends ConsumerState<VisitScreen> {
 
       _timer?.cancel();
       _checkoutNotesController.clear();
-      setState(() {
-        _activeVisit = null;
-        _isCheckingOut = false;
-      });
+      if (mounted) {
+        setState(() {
+          _activeVisit = null;
+          _isCheckingOut = false;
+        });
+      }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Checked out of store. Visit duration captured successfully!',
-            ),
-          ),
+        CustomSnackbar.show(
+          context,
+          message: 'Checked out of store. Visit duration captured successfully!',
+          type: SnackbarType.success,
         );
       }
       _checkActiveSession();
     } catch (e) {
-      setState(() {
-        _isCheckingOut = false;
-      });
       if (mounted) {
-        ScaffoldMessenger.of(
+        setState(() {
+          _isCheckingOut = false;
+        });
+        CustomSnackbar.show(
           context,
-        ).showSnackBar(SnackBar(content: Text('Checkout failed: $e')));
+          message: 'Checkout failed: ${e.toString()}',
+          type: SnackbarType.error,
+        );
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final curSalesman = ref.watch(salesmanProfileProvider).asData?.value;
+    final curSalesman = ref.watch(salesmanProfileProvider).valueOrNull;
 
     if (curSalesman == null) {
       return const Scaffold(body: Center(child: Text('Session missing.')));
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Store Visits Manager')),
+      appBar: AppBar(
+        title: const Text('Store Visits Manager'),
+      ),
       body: _checkingActive
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -147,12 +158,10 @@ class _VisitScreenState extends ConsumerState<VisitScreen> {
                     _buildActiveVisitContainer()
                   else
                     _buildNoActiveVisitContainer(context),
-
                   const SizedBox(height: 24),
-                  const Text(
-                    'Today Visited History',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
+                  const Text('Today Visited History',
+                      style:
+                          TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
                   _buildHistoricalVisitsSnapshot(curSalesman.uid),
                 ],
@@ -179,23 +188,18 @@ class _VisitScreenState extends ConsumerState<VisitScreen> {
                   children: [
                     Icon(Icons.directions_walk, color: Colors.blue),
                     SizedBox(width: 8),
-                    Text(
-                      'Active Store Check-in',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
+                    Text('Active Store Check-in',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16)),
                   ],
                 ),
                 Text(
                   elapsedStr,
                   style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue,
-                    fontFamily: 'monospace',
-                    fontSize: 16,
-                  ),
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                      fontFamily: 'monospace',
+                      fontSize: 16),
                 ),
               ],
             ),
@@ -226,17 +230,13 @@ class _VisitScreenState extends ConsumerState<VisitScreen> {
                 Expanded(
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[800],
-                    ),
+                        backgroundColor: Colors.blue[800]),
                     icon: const Icon(Icons.shopping_bag_outlined),
-                    label: const Text(
-                      'Book Order',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
+                    label: const Text('Book Order',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
                     onPressed: () {
                       context.push(
-                        '/orders/create?shopId=${_activeVisit!.shopId}&shopName=${Uri.encodeComponent(_activeVisit!.shopName)}',
-                      );
+                          '/orders/create?shopId=${_activeVisit!.shopId}&shopName=${Uri.encodeComponent(_activeVisit!.shopName)}');
                     },
                   ),
                 ),
@@ -244,27 +244,21 @@ class _VisitScreenState extends ConsumerState<VisitScreen> {
                 Expanded(
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red[700],
-                    ),
+                        backgroundColor: Colors.red[700]),
                     icon: _isCheckingOut
                         ? const SizedBox(
                             height: 16,
                             width: 16,
                             child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
+                                color: Colors.white, strokeWidth: 2))
                         : const Icon(Icons.logout),
-                    label: const Text(
-                      'Check Out',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
+                    label: const Text('Check Out',
+                        style: TextStyle(fontWeight: FontWeight.bold)),
                     onPressed: _isCheckingOut ? null : _handleCheckout,
                   ),
                 ),
               ],
-            ),
+            )
           ],
         ),
       ),
@@ -278,16 +272,11 @@ class _VisitScreenState extends ConsumerState<VisitScreen> {
         child: Center(
           child: Column(
             children: [
-              Icon(
-                Icons.not_listed_location_outlined,
-                size: 48,
-                color: Colors.grey[400],
-              ),
+              Icon(Icons.not_listed_location_outlined,
+                  size: 48, color: Colors.grey[400]),
               const SizedBox(height: 16),
-              const Text(
-                'No Active Visit Checked In',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
+              const Text('No Active Visit Checked In',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               const SizedBox(height: 8),
               Text(
                 'To record orders, check-ins, store discussion feedback, or client interactions, select a store from your list and register your arrival.',
@@ -309,9 +298,8 @@ class _VisitScreenState extends ConsumerState<VisitScreen> {
 
   Widget _buildHistoricalVisitsSnapshot(String salesmanId) {
     return StreamBuilder<List<Visit>>(
-      stream: ref
-          .watch(visitRepositoryProvider)
-          .getVisitsHistoryStream(salesmanId),
+      stream:
+          ref.watch(visitRepositoryProvider).getVisitsHistoryStream(salesmanId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -324,10 +312,8 @@ class _VisitScreenState extends ConsumerState<VisitScreen> {
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
-              child: Text(
-                'No past store visits recorded today.',
-                style: TextStyle(color: Colors.grey[400]),
-              ),
+              child: Text('No past store visits recorded today.',
+                  style: TextStyle(color: Colors.grey[400])),
             ),
           );
         }
@@ -341,33 +327,23 @@ class _VisitScreenState extends ConsumerState<VisitScreen> {
             return Card(
               margin: const EdgeInsets.only(bottom: 8),
               child: ListTile(
-                title: Text(
-                  v.shopName,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
+                title: Text(v.shopName,
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
                 subtitle: Text(
-                  'Checkout Notes: ${v.notes.isNotEmpty ? v.notes : "No notes captured."}',
-                ),
+                    'Checkout Notes: ${v.notes.isNotEmpty ? v.notes : "No notes captured."}'),
                 trailing: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(
-                      'Dist: ${v.distanceFromShop.toStringAsFixed(1)}m',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue,
-                      ),
-                    ),
+                    Text('Dist: ${v.distanceFromShop.toStringAsFixed(1)}m',
+                        style: const TextStyle(
+                            fontWeight: FontWeight.bold, color: Colors.blue)),
                     const SizedBox(height: 4),
-                    Text(
-                      v.status,
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: Colors.blue,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    Text(v.status,
+                        style: const TextStyle(
+                            fontSize: 10,
+                            color: Colors.green,
+                            fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),

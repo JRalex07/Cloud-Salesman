@@ -1,7 +1,7 @@
 ﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/tracking.dart';
-import '../providers/global_providers.dart';
+import 'package:cloud_power_salesman/models/tracking.dart';
+import 'package:cloud_power_salesman/providers/global_providers.dart';
 
 abstract class TrackingRepository {
   Future<void> updateLiveLocation(String salesmanId, double lat, double lng, double accuracy, double speed, double battery);

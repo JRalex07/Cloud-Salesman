@@ -1,8 +1,8 @@
 ﻿import 'package:flutter/foundation.dart';
-import '../models/order.dart';
-import '../models/visit.dart';
-import '../repositories/order_repository.dart';
-import '../repositories/visit_repository.dart';
+import 'package:cloud_power_salesman/models/order.dart';
+import 'package:cloud_power_salesman/models/visit.dart';
+import 'package:cloud_power_salesman/repositories/order_repository.dart';
+import 'package:cloud_power_salesman/repositories/visit_repository.dart';
 
 class OfflineSyncService {
   final OrderRepository _orderRepo;
@@ -18,8 +18,7 @@ class OfflineSyncService {
   void queueOfflineOrder(Order order) {
     _offlineOrdersQueue.add(order);
     if (kDebugMode) {
-      print(
-          'Offline order queued: ${order.orderId}. Total in queue: ${_offlineOrdersQueue.length}');
+      print('Offline order queued: ${order.orderId}. Total in queue: ${_offlineOrdersQueue.length}');
     }
   }
 
@@ -30,8 +29,7 @@ class OfflineSyncService {
       'visit': visit,
     });
     if (kDebugMode) {
-      print(
-          'Offline visit queued: ${visit.visitId}. Total in queue: ${_offlineVisitsQueue.length}');
+      print('Offline visit queued: ${visit.visitId}. Total in queue: ${_offlineVisitsQueue.length}');
     }
   }
 
@@ -57,8 +55,7 @@ class OfflineSyncService {
     }
 
     // Replay visits
-    final List<Map<String, dynamic>> visitsToSync =
-        List.from(_offlineVisitsQueue);
+    final List<Map<String, dynamic>> visitsToSync = List.from(_offlineVisitsQueue);
     for (var item in visitsToSync) {
       try {
         final salesmanId = item['salesmanId'] as String;
@@ -72,3 +69,4 @@ class OfflineSyncService {
     }
   }
 }
+

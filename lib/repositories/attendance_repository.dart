@@ -1,12 +1,11 @@
 ﻿import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/attendance.dart';
-import '../providers/global_providers.dart';
+import 'package:cloud_power_salesman/models/attendance.dart';
+import 'package:cloud_power_salesman/providers/global_providers.dart';
 
 abstract class AttendanceRepository {
   Future<void> startDuty(String salesmanId, Attendance attendance);
-  Future<void> endDuty(String salesmanId, String attendanceId,
-      DateTime endDutyTime, double endLat, double endLng);
+  Future<void> endDuty(String salesmanId, String attendanceId, DateTime endDutyTime, double endLat, double endLng);
   Stream<List<Attendance>> getAttendanceHistoryStream(String salesmanId);
   Future<Attendance?> getTodayAttendance(String salesmanId, String date);
 }
@@ -19,7 +18,7 @@ class FirebaseAttendanceRepository implements AttendanceRepository {
   @override
   Future<void> startDuty(String salesmanId, Attendance attendance) async {
     final batch = _firestore.batch();
-
+    
     // Set in subcollection
     final attendanceRef = _firestore
         .collection('salesmen')
@@ -39,19 +38,15 @@ class FirebaseAttendanceRepository implements AttendanceRepository {
     batch.set(rootAttendanceRef, rootAttendanceData);
 
     // Update real-time status in tracking_live
-    final liveTrackingRef =
-        _firestore.collection('tracking_live').doc(salesmanId);
-    batch.set(
-        liveTrackingRef,
-        {
-          'salesmanId': salesmanId,
-          'isOnDuty': true,
-          'isOnline': true,
-          'latitude': attendance.startLatitude,
-          'longitude': attendance.startLongitude,
-          'lastUpdated': FieldValue.serverTimestamp(),
-        },
-        SetOptions(merge: true));
+    final liveTrackingRef = _firestore.collection('tracking_live').doc(salesmanId);
+    batch.set(liveTrackingRef, {
+      'salesmanId': salesmanId,
+      'isOnDuty': true,
+      'isOnline': true,
+      'latitude': attendance.startLatitude,
+      'longitude': attendance.startLongitude,
+      'lastUpdated': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
 
     await batch.commit();
   }
@@ -103,21 +98,17 @@ class FirebaseAttendanceRepository implements AttendanceRepository {
           ...updateData,
           'salesmanId': salesmanId,
         };
-        transaction.set(
-            rootAttendanceRef, rootUpdateData, SetOptions(merge: true));
+        transaction.set(rootAttendanceRef, rootUpdateData, SetOptions(merge: true));
       }
 
       // Update live status to offline/off-duty
-      transaction.set(
-          _firestore.collection('tracking_live').doc(salesmanId),
-          {
-            'isOnDuty': false,
-            'isOnline': false,
-            'latitude': endLat,
-            'longitude': endLng,
-            'lastUpdated': FieldValue.serverTimestamp(),
-          },
-          SetOptions(merge: true));
+      transaction.set(_firestore.collection('tracking_live').doc(salesmanId), {
+        'isOnDuty': false,
+        'isOnline': false,
+        'latitude': endLat,
+        'longitude': endLng,
+        'lastUpdated': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
     });
   }
 
@@ -129,8 +120,9 @@ class FirebaseAttendanceRepository implements AttendanceRepository {
         .collection('attendance')
         .orderBy('date', descending: true)
         .snapshots()
-        .map((snap) =>
-            snap.docs.map((doc) => Attendance.fromJson(doc.data())).toList());
+        .map((snap) => snap.docs
+            .map((doc) => Attendance.fromJson(doc.data()))
+            .toList());
   }
 
   @override
@@ -143,21 +135,18 @@ class FirebaseAttendanceRepository implements AttendanceRepository {
         .get();
 
     if (snap.docs.isEmpty) return null;
-
-    final list =
-        snap.docs.map((doc) => Attendance.fromJson(doc.data())).toList();
-
+    
+    final list = snap.docs.map((doc) => Attendance.fromJson(doc.data())).toList();
+    
     // Prioritize an active session (where endDutyTime is null)
     final active = list.where((a) => a.endDutyTime == null).toList();
     if (active.isNotEmpty) {
-      active.sort((a, b) => (b.startDutyTime ?? DateTime(0))
-          .compareTo(a.startDutyTime ?? DateTime(0)));
+      active.sort((a, b) => (b.startDutyTime ?? DateTime(0)).compareTo(a.startDutyTime ?? DateTime(0)));
       return active.first;
     }
-
+    
     // Otherwise, return the most recently completed session
-    list.sort((a, b) => (b.startDutyTime ?? DateTime(0))
-        .compareTo(a.startDutyTime ?? DateTime(0)));
+    list.sort((a, b) => (b.startDutyTime ?? DateTime(0)).compareTo(a.startDutyTime ?? DateTime(0)));
     return list.first;
   }
 }
@@ -165,3 +154,4 @@ class FirebaseAttendanceRepository implements AttendanceRepository {
 final attendanceRepositoryProvider = Provider<AttendanceRepository>((ref) {
   return FirebaseAttendanceRepository(ref.watch(firestoreProvider));
 });
+

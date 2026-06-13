@@ -35,9 +35,8 @@ class _KpiCardState extends State<KpiCard> {
       final double trend = widget.trendPercentage!;
       final bool isPositive = trend >= 0;
       final Color trendColor = isPositive ? Colors.green : Colors.red;
-      final IconData trendIcon =
-          isPositive ? Icons.arrow_upward : Icons.arrow_downward;
-
+      final IconData trendIcon = isPositive ? Icons.arrow_upward : Icons.arrow_downward;
+      
       trendWidget = Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -64,16 +63,13 @@ class _KpiCardState extends State<KpiCard> {
         duration: const Duration(milliseconds: 150),
         curve: Curves.easeOut,
         child: SizedBox(
-          height:
-              120, // Predictable fixed height constraints to ensure uniform visual style
+          height: 120, // Predictable fixed height constraints to ensure uniform visual style
           child: Card(
             margin: EdgeInsets.zero,
             elevation: _isHovered ? 4.0 : 1.0,
-            shadowColor:
-                _isHovered ? widget.baseColor.withOpacity(0.4) : Colors.black12,
+            shadowColor: _isHovered ? widget.baseColor.withOpacity(0.4) : Colors.black12,
             child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
                 child: Column(
@@ -101,8 +97,7 @@ class _KpiCardState extends State<KpiCard> {
                             color: widget.baseColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: Icon(widget.icon,
-                              color: widget.baseColor, size: 16),
+                          child: Icon(widget.icon, color: widget.baseColor, size: 16),
                         )
                       ],
                     ),
@@ -138,8 +133,7 @@ class _KpiCardState extends State<KpiCard> {
                         child: LinearProgressIndicator(
                           value: widget.progressPercentage,
                           backgroundColor: Colors.grey[200],
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(widget.baseColor),
+                          valueColor: AlwaysStoppedAnimation<Color>(widget.baseColor),
                           minHeight: 4,
                         ),
                       ),
@@ -167,3 +161,4 @@ class _KpiCardState extends State<KpiCard> {
     );
   }
 }
+

@@ -2,16 +2,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../models/salesman.dart';
-import '../../core/widgets/kpi_card.dart';
-import '../../core/widgets/responsive_layout.dart';
-import '../../core/widgets/sync_status_icon.dart';
-import '../../providers/global_providers.dart';
-import '../../providers/sync_provider.dart';
-import '../../repositories/attendance_repository.dart';
-import '../../repositories/order_repository.dart';
-import '../../repositories/visit_repository.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' hide Order;
+import 'package:cloud_power_salesman/models/order.dart';
+import 'package:cloud_power_salesman/models/salesman.dart';
+import 'package:cloud_power_salesman/models/visit.dart';
+import 'package:cloud_power_salesman/core/widgets/kpi_card.dart';
+import 'package:cloud_power_salesman/core/widgets/responsive_layout.dart';
+import 'package:cloud_power_salesman/core/widgets/sync_status_icon.dart';
+import 'package:cloud_power_salesman/providers/global_providers.dart';
+import 'package:cloud_power_salesman/providers/sync_provider.dart';
+import 'package:cloud_power_salesman/repositories/order_repository.dart';
+import 'package:cloud_power_salesman/repositories/visit_repository.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -251,32 +252,32 @@ class DashboardScreen extends ConsumerWidget {
         final bool isAdmin = salesman.role.toLowerCase() == 'admin';
 
         return Scaffold(
-          appBar: AppBar(
-            title: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  isAdmin
-                      ? 'Admin Console: ${salesman.name}'
-                      : 'Welcome, ${salesman.name}',
-                  style: const TextStyle(
-                      fontSize: 18, fontWeight: FontWeight.bold),
+            appBar: AppBar(
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    isAdmin
+                        ? 'Admin Console: ${salesman.name}'
+                        : 'Welcome, ${salesman.name}',
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  Text('${salesman.assignedArea} • ${salesman.role}',
+                      style:
+                          const TextStyle(fontSize: 12, color: Colors.white70)),
+                ],
+              ),
+              actions: [
+                const SyncStatusIcon(),
+                IconButton(
+                  icon: const Icon(Icons.notifications_none),
+                  onPressed: () => context.push('/notifications'),
                 ),
-                Text('${salesman.assignedArea} • ${salesman.role}',
-                    style:
-                        const TextStyle(fontSize: 12, color: Colors.white70)),
+                const SizedBox(width: 8),
               ],
             ),
-            actions: [
-              const SyncStatusIcon(),
-              IconButton(
-                icon: const Icon(Icons.notifications_none),
-                onPressed: () => context.push('/notifications'),
-              ),
-              const SizedBox(width: 8),
-            ],
-          ),
-          body: RefreshIndicator(
+            body: RefreshIndicator(
               onRefresh: () async {
                 await ref.read(salesmanProfileProvider.notifier).refresh();
               },
@@ -481,8 +482,8 @@ class DashboardScreen extends ConsumerWidget {
                                   )
                                 ],
                               ),
-                      ]))),
-        );
+                      ])),
+            ));
       },
     );
   }
@@ -493,19 +494,35 @@ class DashboardScreen extends ConsumerWidget {
       stream:
           ref.watch(orderRepositoryProvider).getOrdersBySalesman(salesmanId),
       builder: (context, snapshot) {
-        final ordersList = snapshot.data ?? [];
+        // final ordersList = snapshot.data ?? [];
+        // double dailySales = 0.0;
+        // double monthlySales = 0.0;
+
+        // final now = DateTime.now();
+        // for (var o in ordersList) {
+        //   // Today's total sales
+        //   if (o.createdAt.year == now.year && o.createdAt.month == now.month && o.createdAt.day == now.day) {
+        //     dailySales += o.total;
+        //   }
+        //   // Dynamic Monthly aggregate values
+        //   if (o.createdAt.year == now.year && o.createdAt.month == now.month) {
+        //     monthlySales += o.total;
+        //   }
+        // }
+        final ordersList = snapshot.data ?? <Order>[];
+
         double dailySales = 0.0;
         double monthlySales = 0.0;
 
         final now = DateTime.now();
-        for (var o in ordersList) {
-          // Today's total sales
+
+        for (final o in ordersList.whereType<Order>()) {
           if (o.createdAt.year == now.year &&
               o.createdAt.month == now.month &&
               o.createdAt.day == now.day) {
             dailySales += o.total;
           }
-          // Dynamic Monthly aggregate values
+
           if (o.createdAt.year == now.year && o.createdAt.month == now.month) {
             monthlySales += o.total;
           }
@@ -524,8 +541,10 @@ class DashboardScreen extends ConsumerWidget {
               value: '₹${dailySales.toStringAsFixed(2)}',
               icon: Icons.monetization_on_outlined,
               baseColor: Colors.blue,
+              // subtitle:
+              //     'From ${ordersList.where((o) => o!.createdAt.day == now.day).length} order bookings today',
               subtitle:
-                  'From ${ordersList.where((o) => o.createdAt.day == now.day).length} order bookings today',
+                  'From ${ordersList.whereType<Order>().where((o) => o.createdAt.year == now.year && o.createdAt.month == now.month && o.createdAt.day == now.day).length} order bookings today',
               trendPercentage: dailySales > 0 ? 12.5 : 0.0,
             ),
             KpiCard(
@@ -545,15 +564,24 @@ class DashboardScreen extends ConsumerWidget {
                   .watch(visitRepositoryProvider)
                   .getVisitsHistoryStream(salesmanId),
               builder: (context, vSnapshot) {
-                final visits = vSnapshot.data ?? [];
-                final todayVisits =
-                    visits.where((v) => v.createdAt.day == now.day).toList();
+                // final visits = vSnapshot.data ?? [];
+                // final todayVisits =
+                //     visits.where((v) => v.createdAt.day == now.day).toList();
+                final visits = vSnapshot.data ?? <Visit>[];
+
+                final todayVisits = visits
+                    .whereType<Visit>()
+                    .where((v) =>
+                        v.createdAt.year == now.year &&
+                        v.createdAt.month == now.month &&
+                        v.createdAt.day == now.day)
+                    .toList();
                 final completedCount =
                     todayVisits.where((v) => v.status == 'Completed').length;
 
                 return KpiCard(
                   title: 'Store Visits Today',
-                  value: '${completedCount}/${todayVisits.length}',
+                  value: '$completedCount/${todayVisits.length}',
                   icon: Icons.directions_walk_outlined,
                   baseColor: Colors.green,
                   progressPercentage: todayVisits.isEmpty
@@ -1074,7 +1102,7 @@ class DashboardScreen extends ConsumerWidget {
           title: "Completed Today",
           value: '$totalCompleted',
           icon: Icons.check_circle_outline,
-          baseColor: Colors.teal,
+          baseColor: Colors.green,
           subtitle: 'Ended daily duties',
           trendPercentage: 3.5,
         ),
