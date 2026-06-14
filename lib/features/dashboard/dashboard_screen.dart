@@ -63,55 +63,47 @@ class DashboardScreen extends ConsumerWidget {
     }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
         color: !isOnline
             ? Colors.amber.shade50
             : (totalPending > 0 ? Colors.orange.shade50 : bannerColor),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: (!isOnline
-              ? Colors.amber.shade300
+              ? Colors.amber.shade200
               : (totalPending > 0
-                  ? Colors.orange.shade300
-                  : textColor.withOpacity(0.2))),
-          width: 1.5,
+                  ? Colors.orange.shade200
+                  : textColor.withOpacity(0.1))),
+          width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: textColor.withOpacity(0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          )
-        ],
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: (!isOnline
                   ? Colors.amber.shade100
                   : (totalPending > 0
                       ? Colors.orange.shade100
-                      : textColor.withOpacity(0.12))),
+                      : textColor.withOpacity(0.08))),
               shape: BoxShape.circle,
             ),
             child: isSyncing
-                ? const SizedBox(
+                ? SizedBox(
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
                     ),
                   )
                 : Icon(
                     !isOnline
-                        ? Icons.offline_bolt
-                        : (totalPending > 0 ? Icons.sync_problem : icon),
+                        ? Icons.cloud_off
+                        : (totalPending > 0 ? Icons.sync : icon),
                     color: !isOnline
                         ? Colors.amber.shade900
                         : (totalPending > 0
@@ -120,114 +112,49 @@ class DashboardScreen extends ConsumerWidget {
                     size: 20,
                   ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      !isOnline
-                          ? 'Offline Queue'
-                          : (totalPending > 0
-                              ? 'Pending Synchronization'
-                              : titleText),
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: !isOnline
-                            ? Colors.amber.shade900
-                            : (totalPending > 0
-                                ? Colors.orange.shade900
-                                : textColor),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: isOnline
-                            ? Colors.green.shade100
-                            : Colors.red.shade100,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        isOnline ? 'ONLINE' : 'OFFLINE',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: isOnline
-                              ? Colors.green.shade900
-                              : Colors.red.shade900,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
                 Text(
                   !isOnline
-                      ? (totalPending > 0
-                          ? 'You have $totalPending pending transaction(s) queued. They will automatically sync when network is restored.'
-                          : 'You are working securely offline. All new data is cached on-disk.')
+                      ? 'Network Offline'
                       : (totalPending > 0
-                          ? '$totalPending transaction(s) are waiting to be uploaded to Firebase.'
-                          : subtitleText),
+                          ? 'Synchronization Pending'
+                          : titleText),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: !isOnline
+                        ? Colors.amber.shade900
+                        : (totalPending > 0
+                            ? Colors.orange.shade900
+                            : textColor),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  !isOnline
+                      ? 'Entries will sync automatically when online.'
+                      : subtitleText,
                   style: TextStyle(
                     fontSize: 12,
                     color: !isOnline
                         ? Colors.amber.shade800
                         : (totalPending > 0
                             ? Colors.orange.shade800
-                            : textColor.withOpacity(0.9)),
-                    height: 1.35,
+                            : textColor.withOpacity(0.7)),
                   ),
                 ),
-                if (totalPending > 0 && isOnline) ...[
-                  const SizedBox(height: 10),
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        ref.read(syncProvider.notifier).autoSync();
-                      },
-                      borderRadius: BorderRadius.circular(6),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 6, horizontal: 10),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.shade100,
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: Colors.orange.shade300),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.sync,
-                                size: 14, color: Colors.orange.shade900),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Trigger Sync Now',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.orange.shade900,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  )
-                ],
               ],
             ),
           ),
+          if (totalPending > 0 && isOnline && !isSyncing)
+            TextButton(
+              onPressed: () => ref.read(syncProvider.notifier).autoSync(),
+              child: const Text('Sync Now', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
         ],
       ),
     );

@@ -67,7 +67,7 @@ class OrderHistoryScreen extends ConsumerWidget {
                     debugPrint('Tapped order ${o.orderId}');
                   },
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -76,13 +76,12 @@ class OrderHistoryScreen extends ConsumerWidget {
                           children: [
                             Text(
                               'ID: ${o.orderId}',
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 15),
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF64748B)),
                             ),
                             _buildStatusChip(o.orderStatus),
                           ],
                         ),
-                        const Divider(height: 24),
+                        const SizedBox(height: 16),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -90,17 +89,16 @@ class OrderHistoryScreen extends ConsumerWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text('Outlet Store:',
-                                      style: TextStyle(
-                                          fontSize: 11, color: Colors.grey)),
-                                  const SizedBox(height: 4),
                                   Text(
                                     o.shopName,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 14),
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '${o.items.length} items • ${o.createdAt.toLocal().toString().split(' ')[0]}',
+                                    style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
                                   ),
                                 ],
                               ),
@@ -108,39 +106,28 @@ class OrderHistoryScreen extends ConsumerWidget {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
                               children: [
-                                const Text('Total Invoice Amount:',
-                                    style: TextStyle(
-                                        fontSize: 11, color: Colors.grey)),
-                                const SizedBox(height: 4),
                                 Text(
                                   '₹${o.total.toStringAsFixed(2)}',
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                      color: Colors.blue),
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.blue),
+                                ),
+                                const SizedBox(height: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: o.paymentStatus == 'Paid' ? Colors.green.shade50 : Colors.amber.shade50,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    o.paymentStatus.toUpperCase(),
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w800,
+                                      color: o.paymentStatus == 'Paid' ? Colors.green.shade700 : Colors.amber.shade900,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
                                 ),
                               ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Booked: ${o.createdAt.toLocal().toString().split(' ')[0]}',
-                              style: const TextStyle(
-                                  fontSize: 12, color: Colors.grey),
-                            ),
-                            Text(
-                              'Payment: ${o.paymentStatus}',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: o.paymentStatus == 'Paid'
-                                    ? Colors.green[700]
-                                    : Colors.amber[800],
-                              ),
                             ),
                           ],
                         ),

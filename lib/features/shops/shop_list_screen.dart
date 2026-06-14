@@ -176,25 +176,21 @@ class _ShopListScreenState extends ConsumerState<ShopListScreen> {
 
   Widget _buildShopCard(Shop shop) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () => context.go('/shops/${shop.shopId}'),
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Row(
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: shop.imageUrl.isNotEmpty
-                    ? Image.network(
-                        shop.imageUrl,
-                        width: 70,
-                        height: 70,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _buildFallbackAvatar(),
-                      )
-                    : _buildFallbackAvatar(),
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.storefront, color: Colors.blue, size: 24),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -203,41 +199,22 @@ class _ShopListScreenState extends ConsumerState<ShopListScreen> {
                   children: [
                     Text(
                       shop.shopName,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 16),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Contact: ${shop.shopkeeperName}',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        const Icon(Icons.pin_drop,
-                            size: 14, color: Colors.blue),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            shop.address,
-                            style: TextStyle(
-                                color: Colors.grey[500], fontSize: 12),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
+                    Text(
+                      '${shop.shopkeeperName} • ${shop.area}',
+                      style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
               if (shop.approved)
-                const Icon(Icons.verified, color: Colors.green, size: 20)
+                const Icon(Icons.verified, color: Colors.green, size: 18)
               else
-                Icon(Icons.pending_actions, color: Colors.amber[700], size: 20),
+                Icon(Icons.pending_actions, color: Colors.amber[700], size: 18),
+              const SizedBox(width: 12),
+              Icon(Icons.chevron_right, color: Colors.blueGrey.shade300, size: 20),
             ],
           ),
         ),

@@ -134,6 +134,7 @@ class CartNotifier extends StateNotifier<CartState> {
     required String salesmanId,
     required String shopId,
     required String shopName,
+    String paymentStatus = 'Pending',
   }) async {
     if (state.itemQuantities.isEmpty) {
       throw Exception('Cart is empty.');
@@ -173,7 +174,7 @@ class CartNotifier extends StateNotifier<CartState> {
       discount: state.discountAmount,
       gst: state.totalGst,
       total: state.grandTotal,
-      paymentStatus: 'Pending',
+      paymentStatus: paymentStatus,
       orderStatus: 'Pending',
       notes: state.notes,
       createdAt: DateTime.now(),

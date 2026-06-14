@@ -24,6 +24,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
   final TextEditingController _notesController = TextEditingController();
   final TextEditingController _discountController = TextEditingController();
   bool _isPlacing = false;
+  bool _paymentReceived = false;
 
   @override
   void initState() {
@@ -58,6 +59,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
             salesmanId: curSalesman.uid,
             shopId: widget.shopId,
             shopName: widget.shopName,
+            paymentStatus: _paymentReceived ? 'Paid' : 'Pending',
           );
 
       if (mounted) {
@@ -106,6 +108,8 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                         const SizedBox(height: 20),
                         _buildDiscountField(),
                         const SizedBox(height: 16),
+                        _buildPaymentToggle(),
+                        const SizedBox(height: 16),
                         _buildNotesField(),
                         const SizedBox(height: 24),
                         _buildOrderDetailsSummaryCard(cartState),
@@ -116,6 +120,27 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                 _buildStickyBottomActionBar(cartState),
               ],
             ),
+    );
+  }
+
+  Widget _buildPaymentToggle() {
+    return Card(
+      child: SwitchListTile(
+        title: const Text(
+          'Payment Received Upfront?',
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        ),
+        subtitle: Text(
+          _paymentReceived ? 'Marked as Fully Paid' : 'Marked as Payment Pending',
+          style: TextStyle(fontSize: 12, color: _paymentReceived ? Colors.green[700] : Colors.amber[800]),
+        ),
+        value: _paymentReceived,
+        onChanged: (val) => setState(() => _paymentReceived = val),
+        secondary: Icon(
+          _paymentReceived ? Icons.check_circle : Icons.pending_actions,
+          color: _paymentReceived ? Colors.green : Colors.amber,
+        ),
+      ),
     );
   }
 

@@ -11,6 +11,8 @@ abstract class OrderRepository {
   Future<List<OrderTimeline>> getOrderTimeline(String orderId);
   Future<void> updateOrderStatus(
       String orderId, String newStatus, String message, String updatedBy);
+  Future<void> updatePaymentStatus(
+      String orderId, String newStatus, String updatedBy);
 }
 
 class FirebaseOrderRepository implements OrderRepository {
@@ -113,6 +115,65 @@ class FirebaseOrderRepository implements OrderRepository {
     return snapshot.docs
         .map((doc) => OrderTimeline.fromJson(doc.data()))
         .toList();
+  }
+
+  @override
+  Future<void> updatePaymentStatus(
+      String orderId, String newStatus, String updatedBy) async {
+    final batch = _firestore.batch();
+
+    // Look up the salesmanId to update all copies
+    final orderDoc = await _firestore.collection('orders').doc(orderId).get();
+    String? salesmanId;
+    if (orderDoc.exists) {
+      salesmanId = orderDoc.data()?['salesmanId'] as String?;
+    }
+
+    final orderRef = _firestore.collection('orders').doc(orderId);
+    batch.update(orderRef, {
+      'paymentStatus': newStatus,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+
+    final timelineRef = orderRef.collection('timeline').doc();
+    final timeline = OrderTimeline(
+      timelineId: timelineRef.id,
+      status: 'Payment Update',
+      message: 'Payment status updated to $newStatus',
+      updatedBy: updatedBy,
+      timestamp: DateTime.now(),
+    );
+    batch.set(timelineRef, timeline.toJson());
+
+    if (salesmanId != null && salesmanId.isNotEmpty) {
+      // 1. Salesman subcollection
+      final salesmanOrderRef = _firestore
+          .collection('salesmen')
+          .doc(salesmanId)
+          .collection('orders')
+          .doc(orderId);
+      batch.update(salesmanOrderRef, {
+        'paymentStatus': newStatus,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      batch.set(salesmanOrderRef.collection('timeline').doc(timelineRef.id),
+          timeline.toJson());
+
+      // 2. /SalesmenOrders path
+      final salesmenOrdersRef = _firestore
+          .collection('SalesmenOrders')
+          .doc(salesmanId)
+          .collection(orderId)
+          .doc('order details');
+      batch.update(salesmenOrdersRef, {
+        'paymentStatus': newStatus,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      batch.set(salesmenOrdersRef.collection('timeline').doc(timelineRef.id),
+          timeline.toJson());
+    }
+
+    await batch.commit();
   }
 
   @override

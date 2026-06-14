@@ -132,30 +132,36 @@ class ShopDetailScreen extends ConsumerWidget {
     String salesmanId,
   ) {
     return Card(
-      color: Colors.blue[50],
+      color: Colors.blue.withValues(alpha: 0.04),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
         child: Column(
           children: [
-            const Row(
+            Row(
               children: [
-                Icon(Icons.directions_run, color: Colors.blue),
-                SizedBox(width: 8),
-                Text('Active Field Operations',
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                      color: Colors.blue.withValues(alpha: 0.1),
+                      shape: BoxShape.circle),
+                  child:
+                      const Icon(Icons.flash_on, color: Colors.blue, size: 20),
+                ),
+                const SizedBox(width: 16),
+                const Text('Field Operations',
                     style:
-                        TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             Row(
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue[800]),
-                    icon: const Icon(Icons.login, size: 18),
-                    label: const Text('Check In Store',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    style:
+                        ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                    icon: const Icon(Icons.login_outlined, size: 18),
+                    label: const Text('Check In'),
                     onPressed: () async {
                       try {
                         final String uniqueVisitId =
@@ -165,8 +171,7 @@ class ShopDetailScreen extends ConsumerWidget {
                           shopId: shop.shopId,
                           shopName: shop.shopName,
                           checkInTime: DateTime.now(),
-                          checkInLatitude: shop
-                              .latitude, // verified using actual store coordinates
+                          checkInLatitude: shop.latitude,
                           checkInLongitude: shop.longitude,
                           checkOutLatitude: 0.0,
                           checkOutLongitude: 0.0,
@@ -181,8 +186,7 @@ class ShopDetailScreen extends ConsumerWidget {
                         if (context.mounted) {
                           CustomSnackbar.show(
                             context,
-                            message:
-                                'Registered active check-in on route successfully!',
+                            message: 'Session started for ${shop.shopName}',
                             type: SnackbarType.success,
                           );
                           context.go('/visits');
@@ -191,8 +195,7 @@ class ShopDetailScreen extends ConsumerWidget {
                         if (context.mounted) {
                           CustomSnackbar.show(
                             context,
-                            message:
-                                'Error registering visit check-in: ${e.toString()}',
+                            message: 'Error: ${e.toString()}',
                             type: SnackbarType.error,
                           );
                         }
@@ -202,12 +205,9 @@ class ShopDetailScreen extends ConsumerWidget {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue[700]),
+                  child: OutlinedButton.icon(
                     icon: const Icon(Icons.add_shopping_cart, size: 18),
-                    label: const Text('Place Order',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    label: const Text('New Order'),
                     onPressed: () {
                       context.go(
                           '/orders/create?shopId=${shop.shopId}&shopName=${Uri.encodeComponent(shop.shopName)}');

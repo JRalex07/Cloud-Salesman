@@ -287,19 +287,22 @@ class NavigationShellLayout extends ConsumerWidget {
               selectedIndex: _getCurrentIndex(),
               onDestinationSelected: (value) => _onNavigate(context, value),
               leading: Container(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 24, horizontal: 12),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+                padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 12),
+                child: Column(
                   children: [
-                    const Icon(Icons.cloud_upload,
-                        color: Colors.blue, size: 30),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.cloud_upload, color: Colors.blue, size: 28),
+                    ),
                     if (width >= 1200) ...[
-                      const SizedBox(width: 8),
+                      const SizedBox(height: 12),
                       const Text(
                         'Cloud Power',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 18),
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                     ]
                   ],

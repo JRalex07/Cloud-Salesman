@@ -1,17 +1,55 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_power_salesman/core/widgets/custom_snackbar.dart';
 import 'package:cloud_power_salesman/models/order.dart';
 import 'package:cloud_power_salesman/models/order_timeline.dart';
 import 'package:cloud_power_salesman/providers/global_providers.dart';
 import 'package:cloud_power_salesman/repositories/order_repository.dart';
 
-class OrderDetailScreen extends ConsumerWidget {
+class OrderDetailScreen extends ConsumerStatefulWidget {
   final String orderId;
 
   const OrderDetailScreen({Key? key, required this.orderId}) : super(key: key);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<OrderDetailScreen> createState() => _OrderDetailScreenState();
+}
+
+class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
+  bool _isUpdatingPayment = false;
+
+  Future<void> _handleMarkAsPaid(String salesmanId) async {
+    setState(() => _isUpdatingPayment = true);
+    try {
+      await ref.read(orderRepositoryProvider).updatePaymentStatus(
+            widget.orderId,
+            'Paid',
+            salesmanId,
+          );
+      if (mounted) {
+        CustomSnackbar.show(
+          context,
+          message: 'Payment status updated to PAID successfully.',
+          type: SnackbarType.success,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        CustomSnackbar.show(
+          context,
+          message: 'Failed to update payment: ${e.toString()}',
+          type: SnackbarType.error,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUpdatingPayment = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final curSalesman = ref.watch(salesmanProfileProvider).valueOrNull;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Order Summary Details'),
@@ -19,7 +57,7 @@ class OrderDetailScreen extends ConsumerWidget {
       body: StreamBuilder<List<Order>>(
         // Listen to all salesman orders, but narrow down to the custom ID structure
         stream: ref.watch(orderRepositoryProvider).getOrdersBySalesman(
-              ref.watch(salesmanProfileProvider).valueOrNull?.uid ?? '',
+              curSalesman?.uid ?? '',
             ),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -27,7 +65,7 @@ class OrderDetailScreen extends ConsumerWidget {
           }
 
           final list = snapshot.data ?? [];
-          final oMatches = list.where((ord) => ord.orderId == orderId).toList();
+          final oMatches = list.where((ord) => ord.orderId == widget.orderId).toList();
           if (oMatches.isEmpty) {
             return const Center(child: Text('Sales order details not found or inaccessible.'));
           }
@@ -40,6 +78,10 @@ class OrderDetailScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildSummaryBox(order),
+                if (order.paymentStatus == 'Pending') ...[
+                  const SizedBox(height: 12),
+                  _buildPaymentActionCard(curSalesman?.uid ?? ''),
+                ],
                 const SizedBox(height: 20),
                 const Text('Items Ordered List', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 8),
@@ -52,6 +94,34 @@ class OrderDetailScreen extends ConsumerWidget {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildPaymentActionCard(String salesmanId) {
+    return Card(
+      color: Colors.amber[50],
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            const Icon(Icons.payment, color: Colors.amber),
+            const SizedBox(width: 16),
+            const Expanded(
+              child: Text(
+                'Payment is currently pending for this order.',
+                style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: _isUpdatingPayment ? null : () => _handleMarkAsPaid(salesmanId),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.amber[700]),
+              child: _isUpdatingPayment
+                  ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Text('Mark as Paid'),
+            ),
+          ],
+        ),
       ),
     );
   }
