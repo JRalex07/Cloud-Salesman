@@ -1,0 +1,307 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ==================================================
+    // 🛡️ CORE HELPER FUNCTIONS
+    // ==================================================
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function uid() {
+      return request.auth.uid;
+    }
+
+    function owner(id) {
+      return signedIn() && (
+        uid() == id ||
+        (exists(/databases/$(database)/documents/salesmen/$(id)) && (
+          get(/databases/$(database)/documents/salesmen/$(id)).data.get('uid', '') == uid() ||
+          get(/databases/$(database)/documents/salesmen/$(id)).data.get('email', '') == request.auth.token.email ||
+          get(/databases/$(database)/documents/salesmen/$(id)).data.get('phone', '') == request.auth.token.phone_number
+        ))
+      );
+    }
+
+    function adminExists() {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/admins/$(uid()));
+    }
+
+    function adminDoc() {
+      return get(/databases/$(database)/documents/admins/$(uid()));
+    }
+
+    function isAdmin() {
+      return adminExists() &&
+        ('active' in adminDoc().data) &&
+        adminDoc().data.active == true;
+    }
+
+    function isSuperAdmin() {
+      return isAdmin() && (
+        adminDoc().data.get('role', 'admin') == "super_admin" ||
+        adminDoc().data.get('role', 'admin') == "owner"
+      );
+    }
+
+    function riderExists() {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/riders/$(uid()));
+    }
+
+    function riderDoc() {
+      return get(/databases/$(database)/documents/riders/$(uid()));
+    }
+
+    function isRider() {
+      return riderExists() &&
+        ('isActive' in riderDoc().data) &&
+        riderDoc().data.isActive == true;
+    }
+
+    function isSalesman(id) {
+      return signedIn() && (
+        !exists(/databases/$(database)/documents/salesmen/$(id)) ||
+        get(/databases/$(database)/documents/salesmen/$(id)).data.get('isActive', true) == true
+      );
+    }
+
+    // 🛡️ NEW: Robust Rider Identity Check (Supports dual-ID schema)
+    function isOrderRider(orderData) {
+      return (orderData.get('riderId', '') == uid()) ||
+             (orderData.get('deliveryRiderId', '') == uid()) ||
+             (orderData.get('returnRiderId', '') == uid());
+    }
+
+    // COLLECTION GROUP QUERIES (ADMIN & SALESMAN)
+    // ==================================================
+
+    match /{path=**}/orders/{orderId} {
+      allow read: if signedIn() && (
+        isAdmin() ||
+        owner(resource.data.get('salesmanId', '')) ||
+        resource.data.get('userId', '') == uid()
+      );
+      allow write: if isAdmin();
+    }
+
+    // ==================================================
+    // USERS
+    // ==================================================
+
+    match /users/{userId} {
+      allow create: if owner(userId);
+      allow read, update: if owner(userId) || isAdmin();
+      allow delete: if isSuperAdmin();
+
+      match /addresses/{docId} {
+        allow read, write, delete: if owner(userId) || isAdmin();
+      }
+      match /cart/{docId} {
+        allow read, write, delete: if owner(userId);
+      }
+      match /wishlist/{docId} {
+        allow read, write, delete: if owner(userId);
+      }
+      match /notifications/{docId} {
+        allow read: if owner(userId);
+        allow write, delete: if isAdmin();
+      }
+      match /orders/{docId} {
+        allow read: if owner(userId) || isAdmin() || (isRider() && isOrderRider(resource.data));
+        allow write: if isAdmin();
+        allow delete: if isSuperAdmin();
+      }
+    }
+
+    // ==================================================
+    // ADMINS & RIDERS & SALESMEN (CORE)
+    // ==================================================
+
+    match /admins/{adminId} {
+      allow read: if owner(adminId) || isSuperAdmin();
+      allow create: if isSuperAdmin();
+      allow update: if isSuperAdmin() || owner(adminId);
+      allow delete: if isSuperAdmin() && uid() != adminId;
+    }
+
+    match /riders/{riderId} {
+      allow read: if signedIn();
+      allow create: if isAdmin();
+      allow update: if isAdmin() || owner(riderId);
+      allow delete: if isSuperAdmin();
+    }
+
+    match /salesmen/{salesmanId} {
+      allow get: if owner(salesmanId) || isAdmin();
+      allow list: if isAdmin() || (
+        signedIn() && (
+          (resource.data.uid == uid()) ||
+          (resource.data.email == request.auth.token.email) ||
+          (resource.data.phone == request.auth.token.phone_number)
+        )
+      );
+      allow create: if isAdmin() || (
+        owner(salesmanId) && (!('role' in request.resource.data) || request.resource.data.role == "salesman")
+      );
+      allow update: if isAdmin() || (
+        owner(salesmanId) && request.resource.data.diff(resource.data).changedKeys().hasOnly(['uid', 'fcmToken', 'lastLogin'])
+      );
+      allow delete: if isSuperAdmin();
+
+      match /attendance/{docId} {
+        allow read: if owner(salesmanId) || isAdmin();
+        allow create: if owner(salesmanId);
+        allow update: if (owner(salesmanId) && request.resource.data.diff(resource.data).changedKeys().hasOnly(['endDutyTime','duration','endLatitude','endLongitude','status'])) || isAdmin();
+        allow delete: if isSuperAdmin();
+      }
+
+      match /visits/{docId} {
+        allow read: if owner(salesmanId) || isAdmin();
+        allow create: if owner(salesmanId) && isSalesman(salesmanId);
+        allow update: if (owner(salesmanId) && isSalesman(salesmanId) && request.resource.data.diff(resource.data).changedKeys().hasOnly(['checkOutTime','checkOutLatitude','checkOutLongitude','distanceFromShop','notes','status'])) || isAdmin();
+        allow delete: if isSuperAdmin();
+      }
+
+      match /tracking/{docId} {
+        allow read: if owner(salesmanId) || isAdmin();
+        allow create: if owner(salesmanId) && isSalesman(salesmanId);
+        allow update, delete: if isAdmin();
+      }
+
+      match /notifications/{docId} {
+        allow read: if owner(salesmanId) || isAdmin();
+        allow update: if (owner(salesmanId) && request.resource.data.diff(resource.data).changedKeys().hasOnly(['read'])) || isAdmin();
+        allow create, delete: if isAdmin();
+      }
+
+      match /orders/{docId} {
+        allow read: if owner(salesmanId) || isAdmin();
+        allow create: if owner(salesmanId) && isSalesman(salesmanId);
+        allow update: if (owner(salesmanId) && isSalesman(salesmanId) && request.resource.data.diff(resource.data).changedKeys().hasOnly(['orderStatus','updatedAt'])) || isAdmin();
+        allow delete: if isSuperAdmin();
+
+        match /timeline/{timelineId} {
+          allow read: if owner(salesmanId) || isAdmin();
+          allow create: if owner(salesmanId);
+          allow update, delete: if isAdmin();
+        }
+      }
+    }
+
+    // ==================================================
+    // GLOBAL ORDERS
+    // ==================================================
+
+    match /orders/{id} {
+      allow create: if signedIn() && (
+        ('userId' in request.resource.data && request.resource.data.userId == uid())
+      );
+
+      allow read: if signedIn() && (
+        isAdmin() ||
+        resource.data.userId == uid() ||
+        (isRider() && isOrderRider(resource.data))
+      );
+
+      allow update: if signedIn() && (
+        isAdmin() ||
+
+        // Rider Operational Access
+        (isRider() && isOrderRider(resource.data) &&
+          request.resource.data.diff(resource.data).changedKeys().hasOnly([
+            'status', 'updatedAt', 'lastScanAt', 'deliveredAt',
+            'otpVerified', 'otpVerifiedAt', 'otpVisibleToUser',
+            'paymentStatus', 'otpAttempts', 'returnStatus', 'returnPickedAt'
+          ])
+        ) ||
+
+        // Salesman Status Access
+        (isSalesman(uid()) && resource.data.get('salesmanId', '') == uid() &&
+          request.resource.data.diff(resource.data).changedKeys().hasOnly(['orderStatus', 'updatedAt'])
+        ) ||
+
+        // Customer Lifecycle Access (Cancel/Return/Payment)
+        (resource.data.userId == uid() &&
+          request.resource.data.diff(resource.data).changedKeys().hasOnly([
+            'status', 'updatedAt', 'paymentStatus', 'returnRequested', 'returnRequestedAt', 'returnReason', 'returnMessage'
+          ])
+        )
+      );
+
+      allow delete: if isSuperAdmin();
+
+      match /timeline/{timelineId} {
+        allow read: if signedIn() && (
+          isAdmin() ||
+          get(/databases/$(database)/documents/orders/$(id)).data.userId == uid() ||
+          (isRider() && isOrderRider(get(/databases/$(database)/documents/orders/$(id)).data))
+        );
+
+        allow create: if signedIn() && (
+          isAdmin() ||
+          (isRider() && isOrderRider(getAfter(/databases/$(database)/documents/orders/$(id)).data))
+        );
+
+        allow update, delete: if isAdmin();
+      }
+    }
+
+    // ==================================================
+    // GLOBAL TRACKING & ATTENDANCE
+    // ==================================================
+
+    match /tracking_live/{salesmanId} {
+      allow read: if owner(salesmanId) || isAdmin();
+      allow write: if owner(salesmanId);
+    }
+
+    match /shops/{shopId} {
+      allow read: if signedIn();
+      allow create, update: if isAdmin() || isSalesman(uid());
+      allow delete: if isSuperAdmin();
+    }
+
+    match /attendance/{date} {
+      allow read: if signedIn();
+      match /{uId}/{aId} {
+        allow read, update: if isAdmin() || owner(uId);
+        allow create: if owner(uId) && request.resource.data.salesmanId == uId;
+        allow delete: if isSuperAdmin();
+      }
+    }
+
+    match /{path=**}/{uId}/{aId} {
+      allow read: if isAdmin() || (signedIn() && request.auth.uid == uId);
+    }
+
+    // ==================================================
+    // METADATA & SETTINGS
+    // ==================================================
+
+    match /products/{id} {
+      allow read: if true;
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || (isSalesman(uid()) && request.resource.data.diff(resource.data).changedKeys().hasOnly(['stock']));
+    }
+
+    match /categories/{id} { allow read: if true; allow write: if isAdmin(); }
+    match /banners/{id} { allow read: if true; allow write: if isAdmin(); }
+    match /coupons/{id} { allow read: if true; allow write: if isAdmin(); }
+    match /settings/{id} { allow read: if true; allow write: if isSuperAdmin(); }
+    match /returns/{id} { allow read, write: if isAdmin(); allow delete: if isSuperAdmin(); }
+
+    match /SalesmenOrders/{salesmanId}/{orderId}/{docId} {
+      allow read, write: if owner(salesmanId) || isAdmin();
+      match /timeline/{timelineId} { allow read, write: if owner(salesmanId) || isAdmin(); }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

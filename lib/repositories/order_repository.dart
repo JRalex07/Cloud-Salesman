@@ -25,12 +25,16 @@ class FirebaseOrderRepository implements OrderRepository {
     // Write batch ensuring order metadata, items, and timeline initialization are recorded in single operation
     final batch = _firestore.batch();
 
-    // 1. Root orders collection
-    final orderRef = _firestore.collection('orders').doc(order.orderId);
-    batch.set(orderRef, order.toJson());
+    // 1. Salesman subcollection: /salesmen/{salesmanId}/orders/{orderId}
+    final salesmanOrderRef = _firestore
+        .collection('salesmen')
+        .doc(order.salesmanId)
+        .collection('orders')
+        .doc(order.orderId);
+    batch.set(salesmanOrderRef, order.toJson());
 
     // Write initial timeline logs
-    final timelineRef = orderRef.collection('timeline').doc();
+    final timelineRef = salesmanOrderRef.collection('timeline').doc();
     final timeline = OrderTimeline(
       timelineId: timelineRef.id,
       status: 'Placed',
@@ -40,19 +44,7 @@ class FirebaseOrderRepository implements OrderRepository {
     );
     batch.set(timelineRef, timeline.toJson());
 
-    // 2. Salesman subcollection: /salesmen/{salesmanId}/orders/{orderId}
-    final salesmanOrderRef = _firestore
-        .collection('salesmen')
-        .doc(order.salesmanId)
-        .collection('orders')
-        .doc(order.orderId);
-    batch.set(salesmanOrderRef, order.toJson());
-
-    final salesmanTimelineRef =
-        salesmanOrderRef.collection('timeline').doc(timelineRef.id);
-    batch.set(salesmanTimelineRef, timeline.toJson());
-
-    // 3. /SalesmenOrders/{salesmanId}/{orderid}/order details
+    // 2. /SalesmenOrders/{salesmanId}/{orderid}/order details
     final salesmenOrdersRef = _firestore
         .collection('SalesmenOrders')
         .doc(order.salesmanId)
@@ -78,8 +70,9 @@ class FirebaseOrderRepository implements OrderRepository {
   @override
   Stream<List<Order>> getOrdersBySalesman(String salesmanId) {
     return _firestore
+        .collection('salesmen')
+        .doc(salesmanId)
         .collection('orders')
-        .where('salesmanId', isEqualTo: salesmanId)
         .snapshots()
         .map((snapshot) {
       final list =
@@ -92,7 +85,7 @@ class FirebaseOrderRepository implements OrderRepository {
   @override
   Stream<List<Order>> getOrdersByShop(String shopId) {
     return _firestore
-        .collection('orders')
+        .collectionGroup('orders')
         .where('shopId', isEqualTo: shopId)
         .snapshots()
         .map((snapshot) {
@@ -106,13 +99,19 @@ class FirebaseOrderRepository implements OrderRepository {
   @override
   Future<List<OrderTimeline>> getOrderTimeline(String orderId) async {
     final snapshot = await _firestore
-        .collection('orders')
-        .doc(orderId)
+        .collectionGroup('orders')
+        .where('orderId', isEqualTo: orderId)
+        .limit(1)
+        .get();
+
+    if (snapshot.docs.isEmpty) return [];
+
+    final timelineSnapshot = await snapshot.docs.first.reference
         .collection('timeline')
         .orderBy('timestamp', descending: false)
         .get();
 
-    return snapshot.docs
+    return timelineSnapshot.docs
         .map((doc) => OrderTimeline.fromJson(doc.data()))
         .toList();
   }
@@ -122,20 +121,25 @@ class FirebaseOrderRepository implements OrderRepository {
       String orderId, String newStatus, String updatedBy) async {
     final batch = _firestore.batch();
 
-    // Look up the salesmanId to update all copies
-    final orderDoc = await _firestore.collection('orders').doc(orderId).get();
-    String? salesmanId;
-    if (orderDoc.exists) {
-      salesmanId = orderDoc.data()?['salesmanId'] as String?;
-    }
+    // Look up the order doc in any salesman path
+    final snapshot = await _firestore
+        .collectionGroup('orders')
+        .where('orderId', isEqualTo: orderId)
+        .limit(1)
+        .get();
 
-    final orderRef = _firestore.collection('orders').doc(orderId);
-    batch.update(orderRef, {
+    if (snapshot.docs.isEmpty) return;
+
+    final salesmanOrderRef = snapshot.docs.first.reference;
+    final orderData = snapshot.docs.first.data();
+    final salesmanId = orderData['salesmanId'] as String?;
+
+    batch.update(salesmanOrderRef, {
       'paymentStatus': newStatus,
       'updatedAt': FieldValue.serverTimestamp(),
     });
 
-    final timelineRef = orderRef.collection('timeline').doc();
+    final timelineRef = salesmanOrderRef.collection('timeline').doc();
     final timeline = OrderTimeline(
       timelineId: timelineRef.id,
       status: 'Payment Update',
@@ -146,20 +150,7 @@ class FirebaseOrderRepository implements OrderRepository {
     batch.set(timelineRef, timeline.toJson());
 
     if (salesmanId != null && salesmanId.isNotEmpty) {
-      // 1. Salesman subcollection
-      final salesmanOrderRef = _firestore
-          .collection('salesmen')
-          .doc(salesmanId)
-          .collection('orders')
-          .doc(orderId);
-      batch.update(salesmanOrderRef, {
-        'paymentStatus': newStatus,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-      batch.set(salesmanOrderRef.collection('timeline').doc(timelineRef.id),
-          timeline.toJson());
-
-      // 2. /SalesmenOrders path
+      // Update /SalesmenOrders path
       final salesmenOrdersRef = _firestore
           .collection('SalesmenOrders')
           .doc(salesmanId)
@@ -185,20 +176,25 @@ class FirebaseOrderRepository implements OrderRepository {
   ) async {
     final batch = _firestore.batch();
 
-    // Look up the salesmanId first to update all parallel copies of the order document in different paths
-    final orderDoc = await _firestore.collection('orders').doc(orderId).get();
-    String? salesmanId;
-    if (orderDoc.exists) {
-      salesmanId = orderDoc.data()?['salesmanId'] as String?;
-    }
+    // Look up the order doc in any salesman path
+    final snapshot = await _firestore
+        .collectionGroup('orders')
+        .where('orderId', isEqualTo: orderId)
+        .limit(1)
+        .get();
 
-    final orderRef = _firestore.collection('orders').doc(orderId);
-    batch.update(orderRef, {
+    if (snapshot.docs.isEmpty) return;
+
+    final salesmanOrderRef = snapshot.docs.first.reference;
+    final orderData = snapshot.docs.first.data();
+    final salesmanId = orderData['salesmanId'] as String?;
+
+    batch.update(salesmanOrderRef, {
       'orderStatus': newStatus,
       'updatedAt': FieldValue.serverTimestamp(),
     });
 
-    final timelineRef = orderRef.collection('timeline').doc();
+    final timelineRef = salesmanOrderRef.collection('timeline').doc();
     final timeline = OrderTimeline(
       timelineId: timelineRef.id,
       status: newStatus,
@@ -209,21 +205,6 @@ class FirebaseOrderRepository implements OrderRepository {
     batch.set(timelineRef, timeline.toJson());
 
     if (salesmanId != null && salesmanId.isNotEmpty) {
-      // Update salesman subcollection
-      final salesmanOrderRef = _firestore
-          .collection('salesmen')
-          .doc(salesmanId)
-          .collection('orders')
-          .doc(orderId);
-      batch.update(salesmanOrderRef, {
-        'orderStatus': newStatus,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-
-      final salesmanTimelineRef =
-          salesmanOrderRef.collection('timeline').doc(timelineRef.id);
-      batch.set(salesmanTimelineRef, timeline.toJson());
-
       // Update /SalesmenOrders/{salesmanId}/{orderid}/order details
       final salesmenOrdersRef = _firestore
           .collection('SalesmenOrders')
